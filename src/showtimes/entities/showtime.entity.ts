@@ -7,7 +7,6 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { Movie } from '../../movies/entities/movie.entity';
-import { Theater } from '../../theaters/entities/theater.entity';
 import { Booking } from '../../bookings/entities/booking.entity';
 
 @Entity()

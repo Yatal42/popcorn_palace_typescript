@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { ShowtimesService } from './showtimes.service';
 import { CreateShowtimeDto } from './dto/create-showtime.dto';
 
@@ -33,4 +42,4 @@ export class ShowtimesController {
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.showtimesService.remove(id);
   }
-} 
+}

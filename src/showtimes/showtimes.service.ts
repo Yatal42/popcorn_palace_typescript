@@ -21,17 +21,15 @@ export class ShowtimesService {
   async create(createShowtimeDto: CreateShowtimeDto) {
     const movie = await this.moviesService.findOne(createShowtimeDto.movieId);
 
-    // Calculate end time based on movie duration if not provided
     const startTime = new Date(createShowtimeDto.startTime);
     let endTime;
-    
+
     if (createShowtimeDto.endTime) {
       endTime = new Date(createShowtimeDto.endTime);
     } else {
       endTime = new Date(startTime.getTime() + movie.duration * 60000); // Convert minutes to milliseconds
     }
 
-    // Check for overlapping showtimes in the same theater
     const overlappingShowtime = await this.showtimesRepository.findOne({
       where: {
         theater: createShowtimeDto.theater,
@@ -109,4 +107,4 @@ export class ShowtimesService {
     const showtime = await this.findOne(id);
     return this.showtimesRepository.remove(showtime);
   }
-} 
+}

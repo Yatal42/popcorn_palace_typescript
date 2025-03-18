@@ -1,4 +1,11 @@
-import { IsString, IsNumber, Min, Max, Length, IsNotEmpty } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  Min,
+  Max,
+  Length,
+  IsNotEmpty,
+} from 'class-validator';
 
 export class CreateMovieDto {
   @IsString()
@@ -23,6 +30,5 @@ export class CreateMovieDto {
 
   @IsNumber()
   @Min(1900)
-  @Max(2030)
   releaseYear: number;
 }

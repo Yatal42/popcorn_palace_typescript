@@ -2,7 +2,6 @@ import {
   IsNumber,
   IsDateString,
   Min,
-  Max,
   IsNotEmpty,
   ValidateIf,
   IsString,
@@ -40,7 +39,6 @@ export class CreateShowtimeDto {
 
   @IsNumber()
   @Min(0)
-  @Max(1000) // Maximum reasonable price
   @Transform(({ value }) => parseFloat(value))
   price: number;
 }

@@ -10,4 +10,4 @@ export class BookingsController {
   create(@Body() createBookingDto: CreateBookingDto) {
     return this.bookingsService.create(createBookingDto);
   }
-} 
+}

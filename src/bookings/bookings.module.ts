@@ -6,10 +6,7 @@ import { BookingsService } from './bookings.service';
 import { ShowtimesModule } from '../showtimes/showtimes.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Booking]),
-    ShowtimesModule,
-  ],
+  imports: [TypeOrmModule.forFeature([Booking]), ShowtimesModule],
   controllers: [BookingsController],
   providers: [BookingsService],
 })

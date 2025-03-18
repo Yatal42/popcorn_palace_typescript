@@ -26,7 +26,7 @@ describe('Popcorn Palace API (e2e)', () => {
             database: 'postgres',
             entities: [__dirname + '/../**/*.entity{.ts,.js}'],
             synchronize: true,
-            dropSchema: true, // Reset database for each test run
+            dropSchema: true,
             logging: false,
           }),
           inject: [ConfigService],
@@ -66,18 +66,14 @@ describe('Popcorn Palace API (e2e)', () => {
     });
 
     it('should get all movies', async () => {
-      // First create a movie
-      await request(app.getHttpServer())
-        .post('/movies')
-        .send({
-          title: 'Inception',
-          genre: 'Sci-Fi',
-          duration: 148,
-          rating: 8.8,
-          releaseYear: 2010,
-        });
+      await request(app.getHttpServer()).post('/movies').send({
+        title: 'Inception',
+        genre: 'Sci-Fi',
+        duration: 148,
+        rating: 8.8,
+        releaseYear: 2010,
+      });
 
-      // Then get all movies
       return request(app.getHttpServer())
         .get('/movies')
         .expect(200)
@@ -90,7 +86,6 @@ describe('Popcorn Palace API (e2e)', () => {
     });
 
     it('should get a movie by id', async () => {
-      // First create a movie
       const createResponse = await request(app.getHttpServer())
         .post('/movies')
         .send({
@@ -100,10 +95,9 @@ describe('Popcorn Palace API (e2e)', () => {
           rating: 9.3,
           releaseYear: 1994,
         });
-      
+
       const movieId = createResponse.body.id;
-      
-      // Then get the movie by id
+
       return request(app.getHttpServer())
         .get(`/movies/${movieId}`)
         .expect(200)
@@ -114,9 +108,7 @@ describe('Popcorn Palace API (e2e)', () => {
     });
 
     it('should return 404 for non-existent movie', () => {
-      return request(app.getHttpServer())
-        .get('/movies/9999')
-        .expect(404);
+      return request(app.getHttpServer()).get('/movies/9999').expect(404);
     });
   });
 
@@ -137,15 +129,11 @@ describe('Popcorn Palace API (e2e)', () => {
     });
 
     it('should get all theaters', async () => {
-      // First create a theater
-      await request(app.getHttpServer())
-        .post('/theaters')
-        .send({
-          name: 'Dolby Cinema',
-          capacity: 150,
-        });
+      await request(app.getHttpServer()).post('/theaters').send({
+        name: 'Dolby Cinema',
+        capacity: 150,
+      });
 
-      // Then get all theaters
       return request(app.getHttpServer())
         .get('/theaters')
         .expect(200)
@@ -158,17 +146,15 @@ describe('Popcorn Palace API (e2e)', () => {
     });
 
     it('should get a theater by id', async () => {
-      // First create a theater
       const createResponse = await request(app.getHttpServer())
         .post('/theaters')
         .send({
           name: 'VIP Theater',
           capacity: 50,
         });
-      
+
       const theaterId = createResponse.body.id;
-      
-      // Then get the theater by id
+
       return request(app.getHttpServer())
         .get(`/theaters/${theaterId}`)
         .expect(200)
@@ -179,9 +165,7 @@ describe('Popcorn Palace API (e2e)', () => {
     });
 
     it('should return 404 for non-existent theater', () => {
-      return request(app.getHttpServer())
-        .get('/theaters/9999')
-        .expect(404);
+      return request(app.getHttpServer()).get('/theaters/9999').expect(404);
     });
   });
 
@@ -190,7 +174,6 @@ describe('Popcorn Palace API (e2e)', () => {
     let theaterId: number;
 
     beforeAll(async () => {
-      // Create a movie
       const movieResponse = await request(app.getHttpServer())
         .post('/movies')
         .send({
@@ -202,7 +185,6 @@ describe('Popcorn Palace API (e2e)', () => {
         });
       movieId = movieResponse.body.id;
 
-      // Create a theater
       const theaterResponse = await request(app.getHttpServer())
         .post('/theaters')
         .send({
@@ -214,7 +196,7 @@ describe('Popcorn Palace API (e2e)', () => {
 
     it('should create a showtime', () => {
       const startTime = new Date();
-      startTime.setHours(startTime.getHours() + 1); // 1 hour from now
+      startTime.setHours(startTime.getHours() + 1);
 
       return request(app.getHttpServer())
         .post('/showtimes')
@@ -247,9 +229,7 @@ describe('Popcorn Palace API (e2e)', () => {
     });
 
     it('should return 404 for non-existent showtime', () => {
-      return request(app.getHttpServer())
-        .get('/showtimes/9999')
-        .expect(404);
+      return request(app.getHttpServer()).get('/showtimes/9999').expect(404);
     });
   });
 
@@ -257,7 +237,6 @@ describe('Popcorn Palace API (e2e)', () => {
     let showtimeId: number;
 
     beforeAll(async () => {
-      // Create a movie
       const movieResponse = await request(app.getHttpServer())
         .post('/movies')
         .send({
@@ -267,8 +246,7 @@ describe('Popcorn Palace API (e2e)', () => {
           rating: 8.4,
           releaseYear: 2019,
         });
-      
-      // Create a theater
+
       const theaterResponse = await request(app.getHttpServer())
         .post('/theaters')
         .send({
@@ -276,10 +254,9 @@ describe('Popcorn Palace API (e2e)', () => {
           capacity: 80,
         });
 
-      // Create a showtime
       const startTime = new Date();
-      startTime.setHours(startTime.getHours() + 2); // 2 hours from now
-      
+      startTime.setHours(startTime.getHours() + 2);
+
       const showtimeResponse = await request(app.getHttpServer())
         .post('/showtimes')
         .send({
@@ -288,7 +265,7 @@ describe('Popcorn Palace API (e2e)', () => {
           startTime: startTime.toISOString(),
           price: 14.99,
         });
-      
+
       showtimeId = showtimeResponse.body.id;
     });
 
@@ -298,7 +275,7 @@ describe('Popcorn Palace API (e2e)', () => {
         .send({
           showtimeId,
           seatNumber: 12,
-          userId: 'user123'
+          userId: 'user123',
         })
         .expect(201)
         .expect((res) => {
@@ -310,25 +287,23 @@ describe('Popcorn Palace API (e2e)', () => {
     });
 
     it('should test duplicate seat booking prevention', async () => {
-      // First booking should succeed
       await request(app.getHttpServer())
         .post('/bookings')
         .send({
           showtimeId,
           seatNumber: 15,
-          userId: 'user456'
+          userId: 'user456',
         })
         .expect(201);
-      
-      // Second booking for same seat should fail
+
       return request(app.getHttpServer())
         .post('/bookings')
         .send({
           showtimeId,
-          seatNumber: 15, // Same seat as above
-          userId: 'user789'
+          seatNumber: 15,
+          userId: 'user789',
         })
-        .expect(400); // Should return Bad Request
+        .expect(400);
     });
 
     it('should return 404 for booking with non-existent showtime', () => {
@@ -337,7 +312,7 @@ describe('Popcorn Palace API (e2e)', () => {
         .send({
           showtimeId: 9999,
           seatNumber: 1,
-          userId: 'user123'
+          userId: 'user123',
         })
         .expect(404);
     });
