@@ -24,6 +24,8 @@
 
 # Popcorn Palace Movie Ticket Booking System
 
+> **IMPORTANT**: For detailed setup and usage instructions, please see [Instructions.md](Instructions.md)
+
 ## Overview
 The Popcorn Palace Movie Ticket Booking System is a backend service designed to handle various operations related to movie,showtime, and booking management.
 
