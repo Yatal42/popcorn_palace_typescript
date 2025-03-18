@@ -10,4 +10,4 @@ export interface IShowtime {
   end_time: Date;
   price: number;
   bookings: Booking[];
-} 
+}

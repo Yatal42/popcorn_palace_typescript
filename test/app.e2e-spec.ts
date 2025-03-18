@@ -171,7 +171,7 @@ describe('Popcorn Palace API (e2e)', () => {
 
   describe('Showtimes', () => {
     let movieId: number;
-    let theaterId: number;
+    let theater: number;
 
     beforeAll(async () => {
       const movieResponse = await request(app.getHttpServer())
@@ -191,7 +191,7 @@ describe('Popcorn Palace API (e2e)', () => {
           name: 'Premium Theater',
           capacity: 100,
         });
-      theaterId = theaterResponse.body.id;
+      theater = theaterResponse.body.id;
     });
 
     it('should create a showtime', () => {

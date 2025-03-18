@@ -40,7 +40,7 @@ export class MoviesService {
 
   async remove(id: number) {
     await this.findOne(id);
-    
+
     const movieWithShowtimes = await this.moviesRepository.findOne({
       where: { id },
       relations: ['showtimes'],

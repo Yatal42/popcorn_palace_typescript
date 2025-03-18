@@ -84,21 +84,18 @@ export class ShowtimesService {
       showtime.movieId = movie.id;
     }
 
-    if (updateShowtimeDto.theater) {
-      showtime.theater = updateShowtimeDto.theater;
-    }
+    const updates = {
+      ...(updateShowtimeDto.theater && { theater: updateShowtimeDto.theater }),
+      ...(updateShowtimeDto.price && { price: updateShowtimeDto.price }),
+      ...(updateShowtimeDto.startTime && {
+        startTime: new Date(updateShowtimeDto.startTime),
+      }),
+      ...(updateShowtimeDto.endTime && {
+        endTime: new Date(updateShowtimeDto.endTime),
+      }),
+    };
 
-    if (updateShowtimeDto.startTime) {
-      showtime.startTime = new Date(updateShowtimeDto.startTime);
-    }
-
-    if (updateShowtimeDto.endTime) {
-      showtime.endTime = new Date(updateShowtimeDto.endTime);
-    }
-
-    if (updateShowtimeDto.price) {
-      showtime.price = updateShowtimeDto.price;
-    }
+    Object.assign(showtime, updates);
 
     return this.showtimesRepository.save(showtime);
   }

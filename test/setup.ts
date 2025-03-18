@@ -8,7 +8,7 @@ const waitForDatabase = async (retries = 5, delay = 2000) => {
         port: 5432,
         user: 'postgres',
         password: 'postgres',
-        database: 'postgres'
+        database: 'postgres',
       });
 
       await client.connect();
@@ -20,16 +20,14 @@ const waitForDatabase = async (retries = 5, delay = 2000) => {
       if (i === retries - 1) {
         throw error;
       }
-      console.log(`Retrying in ${delay/1000} seconds...`);
-      await new Promise(resolve => setTimeout(resolve, delay));
+      console.log(`Retrying in ${delay / 1000} seconds...`);
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
 };
 
 beforeAll(async () => {
   await waitForDatabase();
-}, 30000); // 30 seconds timeout
+}, 30000);
 
-afterAll(async () => {
-  // Clean up any test data if needed
-}); 
+afterAll(async () => {});

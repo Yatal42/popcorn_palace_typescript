@@ -1,6 +1,8 @@
-import { 
+import {
   Injectable,
-  NotFoundException, BadRequestException } from '@nestjs/common';
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Booking } from './entities/booking.entity';
@@ -18,7 +20,9 @@ export class BookingsService {
 
   async create(createBookingDto: CreateBookingDto) {
     // Check if showtime exists
-    const showtime = await this.showtimesService.findOne(createBookingDto.showtimeId);
+    const showtime = await this.showtimesService.findOne(
+      createBookingDto.showtimeId,
+    );
 
     // Check if seat is already booked
     const existingBooking = await this.bookingsRepository.findOne({
@@ -70,4 +74,4 @@ export class BookingsService {
     const booking = await this.findOne(id);
     return this.bookingsRepository.remove(booking);
   }
-} 
+}
