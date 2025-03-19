@@ -1,156 +1,560 @@
-# Popcorn Palace Movie Ticket Booking System - Instructions
+# Popcorn Palace API - Instructions
 
-## Overview
-The Popcorn Palace Movie Ticket Booking System is a backend service designed to handle movie ticket booking operations. This implementation uses NestJS with TypeScript and PostgreSQL for database storage.
+This document provides instructions for setting up and using the Popcorn Palace movie theater API.
 
 ## Prerequisites
 
 - Node.js (v14 or higher)
-- npm (v6 or higher)
-- Docker and Docker Compose (for PostgreSQL)
+- npm
+- Docker (for PostgreSQL database)
 
-## Setup and Installation
+## Environment Setup
 
-1. Clone the repository
-```bash
-git clone <repository-url>
-cd popcorn_palace_typescript
+1. Create a `.env` file in the root directory with the following:
+
+```
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_USERNAME=postgres
+DATABASE_PASSWORD=postgres
+DATABASE_NAME=popcorn_palace
 ```
 
-2. Install dependencies
+For testing, the application uses a separate test database with the same credentials but with `_test` appended to the database name.
+
+## Database Setup
+
+The application uses PostgreSQL which runs in Docker. To start the database:
+
+```bash
+docker-compose up -d
+```
+
+When the application starts, it will automatically create the necessary tables in the database using TypeORM.
+
+## Building and Running
+
+1. Install dependencies:
+
 ```bash
 npm install
 ```
 
-3. Create environment files
+2. Build the application:
 
-Create a `.env` file in the root directory:
-```
-DATABASE_HOST=localhost
-DATABASE_PORT=5432
-DATABASE_USER=popcorn_palace
-DATABASE_PASSWORD=popcorn_palace
-DATABASE_NAME=popcorn_palace
-NODE_ENV=development
-```
-
-For testing, create `.env.test`:
-```
-DATABASE_HOST=localhost
-DATABASE_PORT=5432
-DATABASE_USER=postgres
-DATABASE_PASSWORD=postgres
-DATABASE_NAME=postgres
-NODE_ENV=test
-```
-
-## Building the Application
-
-To build the application:
 ```bash
 npm run build
 ```
 
-This will compile the TypeScript code to JavaScript in the `dist` directory.
+3. Start the application:
 
-## Running the Application
-
-1. Start the PostgreSQL database using Docker:
 ```bash
-docker compose up -d
-```
-
-2. Run the application:
-```bash
-# Development mode with hot-reload
+# Development mode
 npm run start:dev
 
 # Production mode
-npm run start:prod
+npm run start
 ```
 
-The application will be available at http://localhost:3000
+The API will be available at `http://localhost:3000`.
 
-## Testing the Application
+## Testing
 
 ### End-to-End Tests
 
-The application includes comprehensive end-to-end tests that verify all API endpoints:
+Run all end-to-end tests:
 
 ```bash
-# Run end-to-end tests
 npm run test:e2e
 ```
 
-These tests follow the NestJS testing guidelines (https://docs.nestjs.com/fundamentals/testing) and include:
+Run a specific test file:
 
-- Creating and retrieving movies
-- Managing theaters
-- Scheduling showtimes
-- Booking seats with validation
-- Error handling for invalid operations
+```bash
+npm run test:e2e -- test/movies/movies.e2e-spec.ts
+```
 
-The e2e tests use:
-- Jest as the testing framework
-- SuperTest for HTTP assertions
-- TypeORM for database testing with a separate test database
-- Test database is reset between test runs using `dropSchema: true`
+### Test Structure
+
+The tests are organized by entity:
+- `test/movies/movies.e2e-spec.ts`
+- `test/theaters/theaters.e2e-spec.ts`
+- `test/showtimes/showtimes.e2e-spec.ts`
+- `test/bookings/bookings.e2e-spec.ts`
+
+Each test follows the same pattern:
+1. Setting up the application
+2. Creating test data
+3. Testing API endpoints
+4. Cleanup
+
+### Test Utilities
+
+The tests use utility functions in `test/setup.ts` to:
+- Initialize the database
+- Clean up tables between tests
+- Set up the test application
+
+### Interpreting Test Results
+
+All tests should pass successfully. If tests fail, check the error messages for detailed information about what went wrong.
 
 ### Unit Tests
 
-To run unit tests:
-```bash
-# Run unit tests
-npm run test
+Run unit tests:
 
-# Generate test coverage report
-npm run test:cov
+```bash
+npm run test
 ```
 
 ## API Documentation
 
 ### Movies API
-- `GET /movies` - Get all movies
-  - Response example: `[{"id": 1, "title": "Sample Movie Title 1", "genre": "Action", "duration": 120, "rating": 8.7, "releaseYear": 2025}, ...]`
-- `GET /movies/:id` - Get movie by ID
-- `POST /movies` - Add a new movie
-  - Request body example: `{"title": "Sample Movie Title", "genre": "Action", "duration": 120, "rating": 8.7, "releaseYear": 2025}`
-- `PATCH /movies/:id` - Update a movie
-- `DELETE /movies/:id` - Delete a movie
+
+#### `GET /movies`
+Returns a list of all movies.
+
+Query parameters:
+- `title`: Filter movies by title
+
+Example response:
+```json
+[
+  {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "title": "The Matrix",
+    "genre": "Sci-Fi",
+    "releaseYear": 1999,
+    "durationMinutes": 136
+  }
+]
+```
+
+#### `GET /movies/:id`
+Returns a specific movie by ID.
+
+Example response:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "title": "The Matrix",
+  "genre": "Sci-Fi",
+  "releaseYear": 1999,
+  "durationMinutes": 136
+}
+```
+
+#### `POST /movies`
+Creates a new movie.
+
+Request body:
+```json
+{
+  "title": "The Matrix",
+  "genre": "Sci-Fi",
+  "releaseYear": 1999,
+  "durationMinutes": 136
+}
+```
+
+Example response:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "title": "The Matrix",
+  "genre": "Sci-Fi",
+  "releaseYear": 1999,
+  "durationMinutes": 136
+}
+```
+
+Error responses:
+- 400 Bad Request: Missing or invalid fields
+- 500 Internal Server Error: Server error
+
+#### `PUT /movies/:id`
+Updates an existing movie.
+
+Request body:
+```json
+{
+  "title": "The Matrix Reloaded",
+  "genre": "Sci-Fi",
+  "releaseYear": 2003,
+  "durationMinutes": 138
+}
+```
+
+Example response:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "title": "The Matrix Reloaded",
+  "genre": "Sci-Fi",
+  "releaseYear": 2003,
+  "durationMinutes": 138
+}
+```
+
+Error responses:
+- 400 Bad Request: Missing or invalid fields
+- 404 Not Found: Movie not found
+- 500 Internal Server Error: Server error
+
+#### `DELETE /movies/:id`
+Deletes a movie.
+
+Example response:
+```json
+{
+  "message": "Movie deleted successfully"
+}
+```
+
+Error responses:
+- 404 Not Found: Movie not found
+- 400 Bad Request: Cannot delete movie that has showtimes
+- 500 Internal Server Error: Server error
 
 ### Theaters API
-- `GET /theaters` - Get all theaters
-- `GET /theaters/:id` - Get theater by ID
-- `POST /theaters` - Add a new theater
-  - Request body example: `{"name": "Sample Theater", "capacity": 120}`
-- `PATCH /theaters/:id` - Update a theater
-- `DELETE /theaters/:id` - Delete a theater
+
+#### `GET /theaters`
+Returns a list of all theaters.
+
+Example response:
+```json
+[
+  {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "name": "Main Theater",
+    "capacity": 200
+  }
+]
+```
+
+#### `GET /theaters/:id`
+Returns a specific theater by ID.
+
+Example response:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "Main Theater",
+  "capacity": 200
+}
+```
+
+#### `POST /theaters`
+Creates a new theater.
+
+Request body:
+```json
+{
+  "name": "Main Theater",
+  "capacity": 200
+}
+```
+
+Example response:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "Main Theater",
+  "capacity": 200
+}
+```
+
+Error responses:
+- 400 Bad Request: Missing or invalid fields
+- 500 Internal Server Error: Server error
+
+#### `PUT /theaters/:id`
+Updates an existing theater.
+
+Request body:
+```json
+{
+  "name": "VIP Theater",
+  "capacity": 100
+}
+```
+
+Example response:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "VIP Theater",
+  "capacity": 100
+}
+```
+
+Error responses:
+- 400 Bad Request: Missing or invalid fields
+- 404 Not Found: Theater not found
+- 500 Internal Server Error: Server error
+
+#### `DELETE /theaters/:id`
+Deletes a theater.
+
+Example response:
+```json
+{
+  "message": "Theater deleted successfully"
+}
+```
+
+Error responses:
+- 404 Not Found: Theater not found
+- 400 Bad Request: Cannot delete theater that has showtimes
+- 500 Internal Server Error: Server error
 
 ### Showtimes API
-- `GET /showtimes` - Get all showtimes
-- `GET /showtimes/:id` - Get showtime by ID
-  - Response example: `{"id": 1, "price": 50.2, "movieId": 1, "theater": "Sample Theater", "startTime": "2025-02-14T11:47:46.125405Z", "endTime": "2025-02-14T14:47:46.125405Z"}`
-- `POST /showtimes` - Create a new showtime
-  - Request body example: `{"movieId": 1, "theater": "Sample Theater", "startTime": "2025-02-14T11:47:46.125405Z", "endTime": "2025-02-14T14:47:46.125405Z", "price": 20.2}`
-- `PATCH /showtimes/:id` - Update a showtime
-- `DELETE /showtimes/:id` - Delete a showtime
+
+#### `GET /showtimes`
+Returns a list of all showtimes.
+
+Example response:
+```json
+[
+  {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "startTime": "2023-07-15T18:00:00Z",
+    "price": 12.50,
+    "movie": {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "title": "The Matrix"
+    },
+    "theater": {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "name": "Main Theater"
+    }
+  }
+]
+```
+
+#### `GET /showtimes/:id`
+Returns a specific showtime by ID.
+
+Example response:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "startTime": "2023-07-15T18:00:00Z",
+  "price": 12.50,
+  "movie": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "title": "The Matrix"
+  },
+  "theater": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "name": "Main Theater"
+  }
+}
+```
+
+#### `POST /showtimes`
+Creates a new showtime.
+
+Request body:
+```json
+{
+  "startTime": "2023-07-15T18:00:00Z",
+  "price": 12.50,
+  "movieId": "123e4567-e89b-12d3-a456-426614174000",
+  "theaterId": "123e4567-e89b-12d3-a456-426614174000"
+}
+```
+
+Example response:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "startTime": "2023-07-15T18:00:00Z",
+  "price": 12.50,
+  "movie": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "title": "The Matrix"
+  },
+  "theater": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "name": "Main Theater"
+  }
+}
+```
+
+Error responses:
+- 400 Bad Request: Missing or invalid fields
+- 404 Not Found: Movie or theater not found
+- 500 Internal Server Error: Server error
+
+#### `PUT /showtimes/:id`
+Updates an existing showtime.
+
+Request body:
+```json
+{
+  "startTime": "2023-07-15T20:00:00Z",
+  "price": 15.00,
+  "movieId": "123e4567-e89b-12d3-a456-426614174000",
+  "theaterId": "123e4567-e89b-12d3-a456-426614174000"
+}
+```
+
+Example response:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "startTime": "2023-07-15T20:00:00Z",
+  "price": 15.00,
+  "movie": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "title": "The Matrix"
+  },
+  "theater": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "name": "Main Theater"
+  }
+}
+```
+
+Error responses:
+- 400 Bad Request: Missing or invalid fields
+- 404 Not Found: Showtime, movie, or theater not found
+- 500 Internal Server Error: Server error
+
+#### `DELETE /showtimes/:id`
+Deletes a showtime.
+
+Example response:
+```json
+{
+  "message": "Showtime deleted successfully"
+}
+```
+
+Error responses:
+- 404 Not Found: Showtime not found
+- 400 Bad Request: Cannot delete showtime that has bookings
+- 500 Internal Server Error: Server error
 
 ### Bookings API
-- `GET /bookings` - Get all bookings
-- `GET /bookings/:id` - Get booking by ID
-- `POST /bookings` - Create a new booking
-  - Request body example: `{"showtimeId": 1, "seatNumber": 15, "userId": "84438967-f68f-4fa0-b620-0f08217e76af"}`
-  - Response example: `{"id": "d1a6423b-4469-4b00-8c5f-e3cfc42eacae", ...}`
-- `DELETE /bookings/:id` - Delete a booking
+
+#### `GET /bookings`
+Returns a list of all bookings.
+
+Example response:
+```json
+[
+  {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "customerName": "John Doe",
+    "customerEmail": "john@example.com",
+    "seatCount": 2,
+    "showtime": {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "startTime": "2023-07-15T18:00:00Z",
+      "movie": {
+        "title": "The Matrix"
+      },
+      "theater": {
+        "name": "Main Theater"
+      }
+    }
+  }
+]
+```
+
+#### `GET /bookings/:id`
+Returns a specific booking by ID.
+
+Example response:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "customerName": "John Doe",
+  "customerEmail": "john@example.com",
+  "seatCount": 2,
+  "showtime": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "startTime": "2023-07-15T18:00:00Z",
+    "movie": {
+      "title": "The Matrix"
+    },
+    "theater": {
+      "name": "Main Theater"
+    }
+  }
+}
+```
+
+#### `POST /bookings`
+Creates a new booking.
+
+Request body:
+```json
+{
+  "customerName": "John Doe",
+  "customerEmail": "john@example.com",
+  "seatCount": 2,
+  "showtimeId": "123e4567-e89b-12d3-a456-426614174000"
+}
+```
+
+Example response:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "customerName": "John Doe",
+  "customerEmail": "john@example.com",
+  "seatCount": 2,
+  "showtime": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "startTime": "2023-07-15T18:00:00Z",
+    "movie": {
+      "title": "The Matrix"
+    },
+    "theater": {
+      "name": "Main Theater"
+    }
+  }
+}
+```
+
+Error responses:
+- 400 Bad Request: Missing fields, invalid email, or not enough seats available
+- 404 Not Found: Showtime not found
+- 500 Internal Server Error: Server error
+
+#### `DELETE /bookings/:id`
+Deletes a booking.
+
+Example response:
+```json
+{
+  "message": "Booking deleted successfully"
+}
+```
+
+Error responses:
+- 404 Not Found: Booking not found
+- 500 Internal Server Error: Server error
 
 ## Troubleshooting
 
 ### Database Connection Issues
-- Check if the Docker container is running: `docker ps`
-- Verify database logs: `docker logs popcorn_palace_typescript-db-1`
-- Check environment variables match the Docker Compose configuration
+
+- Ensure Docker is running
+- Check that the PostgreSQL container is running with `docker ps`
+- Verify the database credentials in your `.env` file match the database configuration
 
 ### Test Failures
-- Ensure PostgreSQL container is running
-- Check `.env.test` configuration
-- Run tests with `--verbose` flag for more details: `npm run test:e2e -- --verbose`
+
+Common issues that might cause test failures:
+- Database connection problems
+- Missing environment variables
+- Outdated or missing dependencies
+
+If tests are failing, try:
+- Restarting the database container
+- Rebuilding the application with `npm run build`
+- Running `npm install` to ensure all dependencies are up-to-date
