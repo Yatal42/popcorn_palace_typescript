@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Like } from 'typeorm';
 import { Movie } from './entities/movie.entity';
 import { CreateMovieDto } from './dto/create-movie.dto';
 
@@ -20,7 +20,14 @@ export class MoviesService {
     return this.moviesRepository.save(movie);
   }
 
-  findAll() {
+  findAll(title?: string) {
+    if (title) {
+      return this.moviesRepository.find({
+        where: {
+          title: Like(`%${title}%`),
+        },
+      });
+    }
     return this.moviesRepository.find();
   }
 

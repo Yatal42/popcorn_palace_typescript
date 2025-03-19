@@ -3,7 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { waitForDatabase, clearTables, testDataSource } from '../setup';
 
 let appInstance: INestApplication | null = null;
@@ -121,4 +121,59 @@ export async function createTestBooking(
     .send(defaultBooking);
 
   return response.body;
+}
+
+// Centralized test data setup for all tests
+export async function setupCommonTestData(app: INestApplication) {
+  const movie = await createTestMovie(app);
+  const theater = await createTestTheater(app);
+  const showtime = await createTestShowtime(app, movie.id, theater.id);
+
+  return { movie, theater, showtime };
+}
+
+// Batch creation of multiple bookings to reduce DB calls
+export async function createMultipleBookings(
+  app: INestApplication,
+  showtimeId: number,
+  count: number,
+  baseData: any = {},
+) {
+  const bookingPromises = [];
+
+  for (let i = 1; i <= count; i++) {
+    const bookingData = {
+      showtimeId,
+      seatNumber: i,
+      userId: `batch-user-${Date.now()}-${i}`,
+      ...baseData,
+    };
+
+    bookingPromises.push(
+      request(app.getHttpServer()).post('/bookings').send(bookingData),
+    );
+  }
+
+  const responses = await Promise.all(bookingPromises);
+  return responses.map((response) => response.body);
+}
+
+// Helper to run multiple related tests with shared setup
+export function setupRelatedTests(description, setupFn, testFns) {
+  describe(description, () => {
+    let setupData;
+
+    beforeEach(async () => {
+      setupData = await setupFn();
+    });
+
+    testFns.forEach(({ name, fn }) => {
+      it(name, () => fn(setupData));
+    });
+  });
+}
+
+// Test clean up helper to ensure tests don't interfere with each other
+export async function cleanupTest(app: INestApplication) {
+  await clearTables();
 }

@@ -24,6 +24,14 @@ export class BookingsService {
       createBookingDto.showtimeId,
     );
 
+    // Check if showtime has already started
+    const now = new Date();
+    if (new Date(showtime.startTime) < now) {
+      throw new BadRequestException(
+        'Cannot book for a showtime that has already started',
+      );
+    }
+
     // Check if seat is already booked
     const existingBooking = await this.bookingsRepository.findOne({
       where: {
@@ -36,6 +44,22 @@ export class BookingsService {
       throw new BadRequestException('Seat is already booked');
     }
 
+    if (createBookingDto.seatNumber > showtime.theater.capacity) {
+      throw new BadRequestException(
+        `seat number ${createBookingDto.seatNumber} exceeds theater capacity of ${showtime.theater.capacity}`,
+      );
+    }
+
+    const existingBookingsCount = await this.bookingsRepository.count({
+      where: { showtime: { id: createBookingDto.showtimeId } },
+    });
+
+    if (existingBookingsCount >= showtime.theater.capacity) {
+      throw new BadRequestException(
+        `Cannot book - theater capacity of ${showtime.theater.capacity} has been reached`,
+      );
+    }
+
     const booking = this.bookingsRepository.create({
       showtime,
       seatNumber: createBookingDto.seatNumber,
@@ -45,8 +69,11 @@ export class BookingsService {
     return this.bookingsRepository.save(booking);
   }
 
-  findAll() {
+  async findAll(userId?: string) {
+    const whereCondition = userId ? { userId } : {};
+
     return this.bookingsRepository.find({
+      where: whereCondition,
       relations: ['showtime'],
     });
   }
