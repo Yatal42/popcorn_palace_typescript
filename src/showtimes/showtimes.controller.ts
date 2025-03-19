@@ -2,7 +2,7 @@ import {
   Controller,
   Get,
   Post,
-  Put,
+  Patch,
   Delete,
   Body,
   Param,
@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { ShowtimesService } from './showtimes.service';
 import { CreateShowtimeDto } from './dto/create-showtime.dto';
+import { UpdateShowtimeDto } from './dto/update-showtime.dto';
 
 @Controller('showtimes')
 export class ShowtimesController {
@@ -30,10 +31,10 @@ export class ShowtimesController {
     return this.showtimesService.findOne(id);
   }
 
-  @Put(':id')
+  @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateShowtimeDto: CreateShowtimeDto,
+    @Body() updateShowtimeDto: UpdateShowtimeDto,
   ) {
     return this.showtimesService.update(id, updateShowtimeDto);
   }

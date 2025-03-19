@@ -9,5 +9,8 @@
   "moduleNameMapper": {
     "^@/(.*)$": "<rootDir>/../src/$1"
   },
-  "setupFilesAfterEnv": ["<rootDir>/setup.ts"]
+  "setupFilesAfterEnv": ["<rootDir>/setup.ts"],
+  "testSequencer": "<rootDir>/custom-sequencer.js",
+  "maxWorkers": 1,
+  "testTimeout": 30000
 }
