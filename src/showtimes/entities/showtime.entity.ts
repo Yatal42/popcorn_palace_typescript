@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { Movie } from '../../movies/entities/movie.entity';
 import { Booking } from '../../bookings/entities/booking.entity';
+import { Theater } from '../../theaters/entities/theater.entity';
 
 @Entity()
 export class Showtime {
@@ -21,8 +22,12 @@ export class Showtime {
   @Column({ name: 'movie_id' })
   movieId: number;
 
-  @Column()
-  theater: string;
+  @ManyToOne(() => Theater, (theater) => theater.showtimes)
+  @JoinColumn({ name: 'theater_id' })
+  theater: Theater;
+
+  @Column({ name: 'theater_id' })
+  theaterId: number;
 
   @Column({ name: 'start_time' })
   startTime: Date;

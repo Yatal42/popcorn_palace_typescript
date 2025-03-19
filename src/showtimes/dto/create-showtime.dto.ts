@@ -4,7 +4,6 @@ import {
   Min,
   IsNotEmpty,
   ValidateIf,
-  IsString,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
@@ -13,9 +12,9 @@ export class CreateShowtimeDto {
   @IsNotEmpty()
   movieId: number;
 
-  @IsString()
+  @IsNumber()
   @IsNotEmpty()
-  theater: string;
+  theaterId: number;
 
   @IsDateString()
   @IsNotEmpty()
