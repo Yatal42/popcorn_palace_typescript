@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   ParseIntPipe,
+  Query,
 } from '@nestjs/common';
 import { TheatersService } from './theaters.service';
 import { CreateTheaterDto } from './dto/create-theater.dto';
@@ -21,8 +22,8 @@ export class TheatersController {
   }
 
   @Get()
-  findAll() {
-    return this.theatersService.findAll();
+  findAll(@Query('name') name?: string) {
+    return this.theatersService.findAll(name);
   }
 
   @Get(':id')

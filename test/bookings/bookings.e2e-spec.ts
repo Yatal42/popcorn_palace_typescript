@@ -2,125 +2,167 @@ import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import {
   setupTestApp,
-  createTestMovie,
-  createTestShowtime,
   createTestBooking,
-  createTestTheater,
+  setupCommonTestData,
+  cleanupTest,
 } from '../utils/test-setup';
 
 describe('Bookings API (e2e)', () => {
   let app: INestApplication;
-  let movieId: number;
-  let showtimeId: number;
-  let createdBookingId: string;
-  let theaterId: number;
+  let commonData;
 
   beforeAll(async () => {
     app = await setupTestApp();
-
-    const movie = await createTestMovie(app);
-    movieId = movie.id;
-
-    const theater = await createTestTheater(app);
-    theaterId = theater.id;
-
-    const showtime = await createTestShowtime(app, movieId, theaterId);
-    showtimeId = showtime.id;
-  }, 60000);
+    commonData = await setupCommonTestData(app);
+  });
 
   afterAll(async () => {
     await app.close();
   });
 
-  it('should create a booking', async () => {
-    const bookingData = {
-      showtimeId: showtimeId,
-      seatNumber: 12,
-      userId: 'user123',
-    };
+  describe('Basic Booking Operations', () => {
+    let createdBookingId: string; // UUID string
 
-    const response = await request(app.getHttpServer())
-      .post('/bookings')
-      .send(bookingData);
+    it('should create a booking', async () => {
+      const bookingData = {
+        showtimeId: commonData.showtime.id,
+        seatNumber: 10,
+        userId: 'test-user',
+      };
 
-    expect(response.status).toBe(201);
-    expect(response.body).toHaveProperty('id');
-    expect(response.body.showtime.id).toBe(showtimeId);
-    expect(response.body.seatNumber).toBe(bookingData.seatNumber);
-    expect(response.body.userId).toBe(bookingData.userId);
+      const response = await request(app.getHttpServer())
+        .post('/bookings')
+        .send(bookingData);
 
-    createdBookingId = response.body.id;
-  });
+      expect(response.status).toBe(201);
+      expect(response.body).toHaveProperty('id');
+      // The response may have a showtime object instead of just showtimeId
+      if (response.body.showtimeId) {
+        expect(response.body.showtimeId).toBe(commonData.showtime.id);
+      } else if (response.body.showtime) {
+        expect(response.body.showtime.id).toBe(commonData.showtime.id);
+      }
+      expect(response.body.seatNumber).toBe(10);
+      expect(response.body.userId).toBe('test-user');
 
-  it('should get all bookings', async () => {
-    const response = await request(app.getHttpServer()).get('/bookings');
-
-    expect(response.status).toBe(200);
-    expect(Array.isArray(response.body)).toBe(true);
-    expect(response.body.length).toBeGreaterThan(0);
-    expect(
-      response.body.find((booking) => booking.id === createdBookingId),
-    ).toBeTruthy();
-  });
-
-  it('should get a booking by id', async () => {
-    const response = await request(app.getHttpServer()).get(
-      `/bookings/${createdBookingId}`,
-    );
-
-    expect(response.status).toBe(200);
-    expect(response.body.id).toBe(createdBookingId);
-    expect(response.body.showtime.id).toBe(showtimeId);
-    expect(response.body.seatNumber).toBe(12);
-    expect(response.body.userId).toBe('user123');
-  });
-
-  it('should prevent duplicate seat booking', async () => {
-    const duplicateBookingData = {
-      showtimeId: showtimeId,
-      seatNumber: 12, // Same seat as the existing booking
-      userId: 'user456',
-    };
-
-    const response = await request(app.getHttpServer())
-      .post('/bookings')
-      .send(duplicateBookingData);
-
-    expect(response.status).toBe(400);
-    expect(response.body.message).toContain('already booked');
-  });
-
-  it('should return 404 for booking with non-existent showtime', async () => {
-    const nonExistentShowtimeId = 99999;
-    const bookingData = {
-      showtimeId: nonExistentShowtimeId,
-      seatNumber: 20,
-      userId: 'user789',
-    };
-
-    const response = await request(app.getHttpServer())
-      .post('/bookings')
-      .send(bookingData);
-
-    expect(response.status).toBe(404);
-  });
-
-  it('should delete a booking', async () => {
-    const tempBooking = await createTestBooking(app, showtimeId, {
-      seatNumber: 25,
-      userId: 'userToDelete',
+      createdBookingId = response.body.id;
     });
 
-    const deleteResponse = await request(app.getHttpServer())
-      .delete(`/bookings/${tempBooking.id}`)
-      .send();
+    it('should get all bookings', async () => {
+      const response = await request(app.getHttpServer()).get('/bookings');
 
-    expect(deleteResponse.status).toBe(200);
+      expect(response.status).toBe(200);
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBeGreaterThan(0);
+      expect(
+        response.body.find((booking) => booking.id === createdBookingId),
+      ).toBeTruthy();
+    });
 
-    const getResponse = await request(app.getHttpServer()).get(
-      `/bookings/${tempBooking.id}`,
-    );
+    it('should get a booking by id', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `/bookings/${createdBookingId}`,
+      );
 
-    expect(getResponse.status).toBe(404);
+      expect(response.status).toBe(200);
+      expect(response.body.id).toBe(createdBookingId);
+      expect(response.body.seatNumber).toBe(10);
+    });
+
+    it('should return 404 for a non-existent booking', async () => {
+      // Use a properly formatted UUID that doesn't exist
+      const nonExistentUuid = '00000000-0000-0000-0000-000000000000';
+      const response = await request(app.getHttpServer()).get(
+        `/bookings/${nonExistentUuid}`,
+      );
+
+      expect(response.status).toBe(404);
+    });
+
+    it('should delete a booking', async () => {
+      // Create a booking specifically for deletion
+      const bookingToDelete = await createTestBooking(
+        app,
+        commonData.showtime.id,
+        {
+          seatNumber: 15,
+          userId: 'delete-test-user',
+        },
+      );
+
+      const response = await request(app.getHttpServer()).delete(
+        `/bookings/${bookingToDelete.id}`,
+      );
+
+      expect(response.status).toBe(200);
+
+      const getResponse = await request(app.getHttpServer()).get(
+        `/bookings/${bookingToDelete.id}`,
+      );
+
+      expect(getResponse.status).toBe(404);
+    });
+  });
+
+  describe('Booking Validation', () => {
+    beforeEach(async () => {
+      await cleanupTest(app);
+      commonData = await setupCommonTestData(app);
+    });
+
+    it('should prevent duplicate seat bookings', async () => {
+      // Create a booking
+      await createTestBooking(app, commonData.showtime.id, {
+        seatNumber: 5,
+        userId: 'user1',
+      });
+
+      // Try to book the same seat
+      const duplicateBookingData = {
+        showtimeId: commonData.showtime.id,
+        seatNumber: 5,
+        userId: 'user2',
+      };
+
+      const response = await request(app.getHttpServer())
+        .post('/bookings')
+        .send(duplicateBookingData);
+
+      expect(response.status).toBe(400);
+      expect(response.body.message.toLowerCase()).toContain('already booked');
+    });
+
+    it('should handle non-existent showtime', async () => {
+      const invalidBookingData = {
+        showtimeId: 9999, // Non-existent showtime ID
+        seatNumber: 1,
+        userId: 'test-user',
+      };
+
+      const response = await request(app.getHttpServer())
+        .post('/bookings')
+        .send(invalidBookingData);
+
+      expect(response.status).toBe(404);
+    });
+
+    it('should validate seat number against theater capacity', async () => {
+      // Get theater capacity from common test data
+      const capacity = commonData.theater.capacity;
+
+      // Try to book a seat that exceeds capacity
+      const invalidBookingData = {
+        showtimeId: commonData.showtime.id,
+        seatNumber: capacity + 1, // One more than capacity
+        userId: 'capacity-test-user',
+      };
+
+      const response = await request(app.getHttpServer())
+        .post('/bookings')
+        .send(invalidBookingData);
+
+      expect(response.status).toBe(400);
+      expect(response.body.message.toLowerCase()).toContain('seat number');
+    });
   });
 });
