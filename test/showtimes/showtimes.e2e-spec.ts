@@ -116,11 +116,9 @@ describe('Showtimes API (e2e)', () => {
   });
 
   describe('Showtime Validation', () => {
-    let commonData;
-
     beforeEach(async () => {
       await cleanupTest(app);
-      commonData = await setupCommonTestData(app);
+      await setupCommonTestData(app);
     });
 
     // Test overlapping showtimes in the same theater
