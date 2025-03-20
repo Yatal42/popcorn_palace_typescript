@@ -1,4 +1,11 @@
-import { IsString, IsNumber, Min, Max, Length, IsNotEmpty } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  Min,
+  Max,
+  Length,
+  IsNotEmpty,
+} from 'class-validator';
 
 export class CreateTheaterDto {
   @IsString()

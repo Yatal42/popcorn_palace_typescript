@@ -8,10 +8,8 @@ import { waitForDatabase, clearTables, testDataSource } from '../setup';
 
 let appInstance: INestApplication | null = null;
 
-// Creates and initializes a test application.
 export async function setupTestApp(): Promise<INestApplication> {
   if (appInstance) {
-    // If we're reusing the app, clear the database.
     await clearTables();
     return appInstance;
   }
@@ -24,7 +22,6 @@ export async function setupTestApp(): Promise<INestApplication> {
         isGlobal: true,
         envFilePath: '.env.test',
       }),
-      // Use our testDataSource instead of creating a new connection
       TypeOrmModule.forRoot({
         ...testDataSource.options,
         synchronize: true,
@@ -123,7 +120,6 @@ export async function createTestBooking(
   return response.body;
 }
 
-// Centralized test data setup for all tests
 export async function setupCommonTestData(app: INestApplication) {
   const movie = await createTestMovie(app);
   const theater = await createTestTheater(app);
@@ -132,7 +128,6 @@ export async function setupCommonTestData(app: INestApplication) {
   return { movie, theater, showtime };
 }
 
-// Batch creation of multiple bookings to reduce DB calls
 export async function createMultipleBookings(
   app: INestApplication,
   showtimeId: number,
@@ -158,7 +153,6 @@ export async function createMultipleBookings(
   return responses.map((response) => response.body);
 }
 
-// Helper to run multiple related tests with shared setup
 export function setupRelatedTests(description, setupFn, testFns) {
   describe(description, () => {
     let setupData;
@@ -173,7 +167,9 @@ export function setupRelatedTests(description, setupFn, testFns) {
   });
 }
 
-// Test clean up helper to ensure tests don't interfere with each other
-export async function cleanupTest(app: INestApplication) {
+export async function cleanupTest(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _app: INestApplication,
+) {
   await clearTables();
 }
