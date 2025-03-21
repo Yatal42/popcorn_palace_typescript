@@ -303,13 +303,39 @@ describe('ShowtimesService', () => {
   });
 
   describe('remove', () => {
-    it('should throw NotFoundException if showtime does not exist', async () => {
-      const showtimeId = 999;
+    it('should delete a showtime if it exists', async () => {
+      const showtimeId = 1;
+      const deleteResult = { affected: 1 };
 
-      showtimeRepository.findOne.mockResolvedValue(null);
+      showtimeRepository.delete.mockResolvedValue(deleteResult);
+
+      const result = await service.remove(showtimeId);
+
+      expect(showtimeRepository.delete).toHaveBeenCalledWith(showtimeId);
+      expect(result).toEqual({ message: 'Showtime deleted successfully' });
+    });
+
+    it('should throw BadRequestException if showtime has associated bookings', async () => {
+      const showtimeId = 1;
+      const error = { code: '23503' };
+
+      showtimeRepository.delete.mockRejectedValue(error);
 
       await expect(service.remove(showtimeId)).rejects.toThrow(
-        new NotFoundException(`Showtime with ID "${showtimeId}" not found`),
+        new BadRequestException(
+          'Cannot delete showtime that has associated bookings',
+        ),
+      );
+    });
+
+    it('should throw NotFoundException if showtime does not exist', async () => {
+      const showtimeId = 999;
+      const deleteResult = { affected: 0 };
+
+      showtimeRepository.delete.mockResolvedValue(deleteResult);
+
+      await expect(service.remove(showtimeId)).rejects.toThrow(
+        new NotFoundException(`Showtime with ID ${showtimeId} not found`),
       );
     });
   });

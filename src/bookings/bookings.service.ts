@@ -104,7 +104,7 @@ export class BookingsService {
       const result = await this.bookingsRepository.delete(id);
 
       if (result.affected === 0) {
-        throw new NotFoundException(`Booking with ID ${id} not found`);
+        throw new NotFoundException(`Booking with ID "${id}" not found`);
       }
 
       return { message: 'Booking deleted successfully' };

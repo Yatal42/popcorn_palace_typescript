@@ -89,7 +89,7 @@ describe('MoviesService', () => {
 
       const result = await service.findAll();
 
-      expect(movieRepository.find).toHaveBeenCalledWith();
+      expect(movieRepository.find).toHaveBeenCalledWith({});
       expect(result).toEqual(movies);
     });
 
@@ -234,53 +234,21 @@ describe('MoviesService', () => {
   describe('remove', () => {
     it('should delete a movie if it exists and has no showtimes', async () => {
       const movieId = 1;
-      const movie = {
-        id: movieId,
-        title: 'Test Movie',
-        genre: 'Action',
-        durationInMinutes: 120,
-        rating: 8.5,
-        releaseYear: 2023,
-        showtimes: [],
-      };
+      const deleteResult = { affected: 1 };
 
-      movieRepository.findOne
-        .mockResolvedValueOnce(movie)
-        .mockResolvedValueOnce(movie);
+      movieRepository.delete.mockResolvedValue(deleteResult);
 
-      movieRepository.delete.mockResolvedValue({ affected: 1 });
+      const result = await service.remove(movieId);
 
-      await service.remove(movieId);
-
-      expect(movieRepository.findOne).toHaveBeenCalledWith({
-        where: { id: movieId },
-      });
-      expect(movieRepository.findOne).toHaveBeenCalledWith({
-        where: { id: movieId },
-        relations: ['showtimes'],
-      });
       expect(movieRepository.delete).toHaveBeenCalledWith(movieId);
+      expect(result).toEqual({ message: 'Movie deleted successfully' });
     });
 
     it('should throw BadRequestException if movie has associated showtimes', async () => {
       const movieId = 1;
-      const movie = {
-        id: movieId,
-        title: 'Test Movie',
-        genre: 'Action',
-        durationInMinutes: 120,
-        rating: 8.5,
-        releaseYear: 2023,
-      };
+      const error = { code: '23503' }; // PostgreSQL foreign key constraint error
 
-      const movieWithShowtimes = {
-        ...movie,
-        showtimes: [{ id: 1 }],
-      };
-
-      movieRepository.findOne
-        .mockResolvedValueOnce(movie)
-        .mockResolvedValueOnce(movieWithShowtimes);
+      movieRepository.delete.mockRejectedValue(error);
 
       await expect(service.remove(movieId)).rejects.toThrow(
         new BadRequestException(
@@ -291,8 +259,9 @@ describe('MoviesService', () => {
 
     it('should throw NotFoundException if movie does not exist', async () => {
       const movieId = 999;
+      const deleteResult = { affected: 0 };
 
-      movieRepository.findOne.mockResolvedValue(null);
+      movieRepository.delete.mockResolvedValue(deleteResult);
 
       await expect(service.remove(movieId)).rejects.toThrow(
         new NotFoundException(`Movie with ID ${movieId} not found`),

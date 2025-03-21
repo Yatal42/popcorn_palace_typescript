@@ -267,10 +267,23 @@ describe('BookingsService', () => {
   });
 
   describe('remove', () => {
+    it('should delete a booking if it exists', async () => {
+      const bookingId = 'test-id';
+      const deleteResult = { affected: 1 };
+
+      bookingRepository.delete.mockResolvedValue(deleteResult);
+
+      const result = await service.remove(bookingId);
+
+      expect(bookingRepository.delete).toHaveBeenCalledWith(bookingId);
+      expect(result).toEqual({ message: 'Booking deleted successfully' });
+    });
+
     it('should throw NotFoundException if booking does not exist', async () => {
       const bookingId = 'nonexistent-id';
+      const deleteResult = { affected: 0 };
 
-      bookingRepository.findOne.mockResolvedValue(null);
+      bookingRepository.delete.mockResolvedValue(deleteResult);
 
       await expect(service.remove(bookingId)).rejects.toThrow(
         new NotFoundException(`Booking with ID "${bookingId}" not found`),
