@@ -21,7 +21,7 @@ describe('Bookings API (e2e)', () => {
   });
 
   describe('Basic Booking Operations', () => {
-    let createdBookingId: string; // UUID string
+    let createdBookingId: string;
 
     it('should create a booking', async () => {
       const bookingData = {
@@ -36,7 +36,7 @@ describe('Bookings API (e2e)', () => {
 
       expect(response.status).toBe(201);
       expect(response.body).toHaveProperty('id');
-      // The response may have a showtime object instead of just showtimeId
+
       if (response.body.showtimeId) {
         expect(response.body.showtimeId).toBe(commonData.showtime.id);
       } else if (response.body.showtime) {
@@ -70,7 +70,6 @@ describe('Bookings API (e2e)', () => {
     });
 
     it('should return 404 for a non-existent booking', async () => {
-      // Use a properly formatted UUID that doesn't exist
       const nonExistentUuid = '00000000-0000-0000-0000-000000000000';
       const response = await request(app.getHttpServer()).get(
         `/bookings/${nonExistentUuid}`,
@@ -80,7 +79,6 @@ describe('Bookings API (e2e)', () => {
     });
 
     it('should delete a booking', async () => {
-      // Create a booking specifically for deletion
       const bookingToDelete = await createTestBooking(
         app,
         commonData.showtime.id,
@@ -111,7 +109,6 @@ describe('Bookings API (e2e)', () => {
     });
 
     it('should prevent duplicate seat bookings', async () => {
-      // Create a booking
       await createTestBooking(app, commonData.showtime.id, {
         seatNumber: 5,
         userId: 'user1',
@@ -147,13 +144,12 @@ describe('Bookings API (e2e)', () => {
     });
 
     it('should validate seat number against theater capacity', async () => {
-      // Get theater capacity from common test data
       const capacity = commonData.theater.capacity;
 
       // Try to book a seat that exceeds capacity
       const invalidBookingData = {
         showtimeId: commonData.showtime.id,
-        seatNumber: capacity + 1, // One more than capacity
+        seatNumber: capacity + 1,
         userId: 'capacity-test-user',
       };
 

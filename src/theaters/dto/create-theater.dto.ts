@@ -1,11 +1,4 @@
-import {
-  IsString,
-  IsNumber,
-  Min,
-  Max,
-  Length,
-  IsNotEmpty,
-} from 'class-validator';
+import { IsString, IsNumber, Min, Length, IsNotEmpty } from 'class-validator';
 
 export class CreateTheaterDto {
   @IsString()
@@ -15,6 +8,5 @@ export class CreateTheaterDto {
 
   @IsNumber()
   @Min(1)
-  @Max(1000) // Reasonable maximum capacity
   capacity: number;
 }

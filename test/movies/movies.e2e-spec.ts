@@ -80,7 +80,7 @@ describe('Movies API (e2e)', () => {
       expect(response.status).toBe(200);
       expect(response.body.title).toBe(updateData.title);
       expect(response.body.rating).toBe(updateData.rating);
-      expect(response.body.genre).toBe('Action'); // Unchanged field
+      expect(response.body.genre).toBe('Action');
     });
 
     it('should delete a movie', async () => {
