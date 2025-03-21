@@ -2,6 +2,8 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  InternalServerErrorException,
+  HttpException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindManyOptions } from 'typeorm';
@@ -98,7 +100,22 @@ export class BookingsService {
   }
 
   async remove(id: string) {
-    const booking = await this.findOne(id);
-    return this.bookingsRepository.remove(booking);
+    try {
+      const result = await this.bookingsRepository.delete(id);
+
+      if (result.affected === 0) {
+        throw new NotFoundException(`Booking with ID ${id} not found`);
+      }
+
+      return { message: 'Booking deleted successfully' };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException(
+        'Error occurred while deleting booking',
+      );
+    }
   }
 }
