@@ -153,7 +153,6 @@ describe('TheatersService', () => {
 
       theaterRepository.findOne.mockResolvedValue(existingTheater);
 
-      // Mock merge to modify the object in place as TypeORM does
       theaterRepository.merge.mockImplementation((target, source) => {
         Object.assign(target, source);
         return target;
@@ -173,7 +172,6 @@ describe('TheatersService', () => {
         updateTheaterDto,
       );
 
-      // Verify the save was called with the right data
       expect(theaterRepository.save).toHaveBeenCalled();
       const savedEntity = theaterRepository.save.mock.calls[0][0];
       expect(savedEntity.id).toBe(theaterId);

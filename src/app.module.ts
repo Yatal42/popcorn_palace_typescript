@@ -26,8 +26,8 @@ import databaseConfig from './config/database.config';
           password: configService.get('database.password'),
           database: configService.get('database.name'),
           autoLoadEntities: true,
-          synchronize: !isProduction, // Only true in development
-          logging: !isProduction, // Only true in development
+          synchronize: !isProduction,
+          logging: !isProduction,
         };
       },
       inject: [ConfigService],

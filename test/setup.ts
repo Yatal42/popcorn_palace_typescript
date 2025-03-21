@@ -34,7 +34,6 @@ const initializeDatabase = async () => {
 };
 
 const waitForDatabase = async (retries = 5, delay = 2000) => {
-  // First ensure the test database exists
   await createTestDatabase();
 
   for (let i = 0; i < retries; i++) {

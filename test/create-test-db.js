@@ -22,7 +22,6 @@ async function createTestDatabase() {
     } else {
       console.log('Test database already exists');
     }
-    
     await client.end();
     return true;
   } catch (error) {

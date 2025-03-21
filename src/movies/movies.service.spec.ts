@@ -201,7 +201,6 @@ describe('MoviesService', () => {
         updateMovieDto,
       );
 
-      // Verify the save was called with the right data
       expect(movieRepository.save).toHaveBeenCalled();
       const savedEntity = movieRepository.save.mock.calls[0][0];
       expect(savedEntity.id).toBe(movieId);

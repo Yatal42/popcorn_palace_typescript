@@ -58,20 +58,16 @@ export class MoviesService {
 
       return { message: 'Movie deleted successfully' };
     } catch (error) {
-      // Foreign key constraint violation - typically indicates related records exist
       if (error.code === '23503') {
-        // PostgreSQL foreign key constraint violation code
         throw new BadRequestException(
           'Cannot delete movie that has associated showtimes',
         );
       }
 
-      // If it's already a NestJS HttpException (like our NotFoundException above), rethrow it
       if (error instanceof HttpException) {
         throw error;
       }
 
-      // For any other unknown errors
       throw new InternalServerErrorException(
         'Error occurred while deleting movie',
       );
