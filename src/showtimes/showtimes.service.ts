@@ -4,7 +4,12 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
+import {
+  Repository,
+  LessThanOrEqual,
+  MoreThanOrEqual,
+  FindManyOptions,
+} from 'typeorm';
 import { CreateShowtimeDto } from './dto/create-showtime.dto';
 import { UpdateShowtimeDto } from './dto/update-showtime.dto';
 import { Showtime } from './entities/showtime.entity';
@@ -66,9 +71,11 @@ export class ShowtimesService {
   }
 
   findAll() {
-    return this.showtimesRepository.find({
+    const findOptions: FindManyOptions<Showtime> = {
       relations: ['movie', 'theater', 'bookings'],
-    });
+    };
+
+    return this.showtimesRepository.find(findOptions);
   }
 
   async findOne(id: number) {
