@@ -20,7 +20,7 @@ describe('Movies API (e2e)', () => {
       const movieData = {
         title: 'Test Movie Creation',
         genre: 'Action',
-        duration: 120,
+        durationInMinutes: 120,
         rating: 8.5,
         releaseYear: 2023,
       };
@@ -33,7 +33,7 @@ describe('Movies API (e2e)', () => {
       expect(response.body).toHaveProperty('id');
       expect(response.body.title).toBe(movieData.title);
       expect(response.body.genre).toBe(movieData.genre);
-      expect(response.body.duration).toBe(movieData.duration);
+      expect(response.body.durationInMinutes).toBe(movieData.durationInMinutes);
       expect(response.body.rating).toBe(movieData.rating);
       expect(response.body.releaseYear).toBe(movieData.releaseYear);
 

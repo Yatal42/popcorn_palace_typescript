@@ -21,7 +21,7 @@ export class CreateMovieDto {
   @IsNumber()
   @Min(1)
   @Max(600) // 10 hours max
-  duration: number;
+  durationInMinutes: number;
 
   @IsNumber()
   @Min(0)

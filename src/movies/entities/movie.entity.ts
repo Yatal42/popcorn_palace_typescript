@@ -13,7 +13,7 @@ export class Movie {
   genre: string;
 
   @Column()
-  duration: number; // in minutes
+  durationInMinutes: number;
 
   @Column('decimal', { precision: 2, scale: 1 })
   rating: number;

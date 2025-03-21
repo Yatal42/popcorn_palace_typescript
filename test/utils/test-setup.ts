@@ -47,7 +47,7 @@ export async function createTestMovie(
   const defaultMovie = {
     title: `Test Movie ${Date.now()}`,
     genre: 'Action',
-    duration: 120,
+    durationInMinutes: 120,
     rating: 8.5,
     releaseYear: 2023,
     ...movieData,
