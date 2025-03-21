@@ -2,6 +2,8 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  InternalServerErrorException,
+  HttpException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, FindManyOptions } from 'typeorm';
@@ -47,22 +49,32 @@ export class MoviesService {
   }
 
   async remove(id: number) {
-    await this.findOne(id);
+    try {
+      const result = await this.moviesRepository.delete(id);
 
-    const movieWithShowtimes = await this.moviesRepository.findOne({
-      where: { id },
-      relations: ['showtimes'],
-    });
+      if (result.affected === 0) {
+        throw new NotFoundException(`Movie with ID ${id} not found`);
+      }
 
-    if (movieWithShowtimes.showtimes.length > 0) {
-      throw new BadRequestException(
-        'Cannot delete movie that has associated showtimes',
+      return { message: 'Movie deleted successfully' };
+    } catch (error) {
+      // Foreign key constraint violation - typically indicates related records exist
+      if (error.code === '23503') {
+        // PostgreSQL foreign key constraint violation code
+        throw new BadRequestException(
+          'Cannot delete movie that has associated showtimes',
+        );
+      }
+
+      // If it's already a NestJS HttpException (like our NotFoundException above), rethrow it
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      // For any other unknown errors
+      throw new InternalServerErrorException(
+        'Error occurred while deleting movie',
       );
-    }
-
-    const result = await this.moviesRepository.delete(id);
-    if (result.affected === 0) {
-      throw new NotFoundException(`Movie with ID ${id} not found`);
     }
   }
 }

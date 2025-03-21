@@ -2,6 +2,8 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  InternalServerErrorException,
+  HttpException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
@@ -124,7 +126,26 @@ export class ShowtimesService {
   }
 
   async remove(id: number) {
-    const showtime = await this.findOne(id);
-    return this.showtimesRepository.remove(showtime);
+    try {
+      const result = await this.showtimesRepository.delete(id);
+
+      if (result.affected === 0) {
+        throw new NotFoundException(`Showtime with ID ${id} not found`);
+      }
+
+      return { message: 'Showtime deleted successfully' };
+    } catch (error) {
+      if (error.code === '23503') {
+        throw new BadRequestException(
+          'Cannot delete showtime that has associated bookings',
+        );
+      }
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Error occurred while deleting showtime',
+      );
+    }
   }
 }

@@ -2,6 +2,8 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  InternalServerErrorException,
+  HttpException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, FindManyOptions } from 'typeorm';
@@ -47,21 +49,26 @@ export class TheatersService {
   }
 
   async remove(id: number) {
-    await this.findOne(id);
-    const theaterWithShowtimes = await this.theatersRepository.findOne({
-      where: { id },
-      relations: ['showtimes'],
-    });
+    try {
+      const result = await this.theatersRepository.delete(id);
 
-    if (theaterWithShowtimes.showtimes.length > 0) {
-      throw new BadRequestException(
-        'Cannot delete theater that has associated showtimes',
+      if (result.affected === 0) {
+        throw new NotFoundException(`Theater with ID ${id} not found`);
+      }
+
+      return { message: 'Theater deleted successfully' };
+    } catch (error) {
+      if (error.code === '23503') {
+        throw new BadRequestException(
+          'Cannot delete theater that has associated showtimes',
+        );
+      }
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Error occurred while deleting theater',
       );
-    }
-
-    const result = await this.theatersRepository.delete(id);
-    if (result.affected === 0) {
-      throw new NotFoundException(`Theater with ID ${id} not found`);
     }
   }
 }
