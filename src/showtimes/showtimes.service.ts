@@ -140,9 +140,11 @@ export class ShowtimesService {
           'Cannot delete showtime that has associated bookings',
         );
       }
+
       if (error instanceof HttpException) {
         throw error;
       }
+
       throw new InternalServerErrorException(
         'Error occurred while deleting showtime',
       );

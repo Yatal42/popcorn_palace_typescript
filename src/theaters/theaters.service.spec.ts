@@ -66,13 +66,13 @@ describe('TheatersService', () => {
       const theaters = [
         {
           id: 1,
-          name: 'Test Theater 1',
+          name: 'Theater 1',
           capacity: 100,
         },
         {
           id: 2,
-          name: 'Test Theater 2',
-          capacity: 200,
+          name: 'Theater 2',
+          capacity: 150,
         },
       ];
 
@@ -80,7 +80,7 @@ describe('TheatersService', () => {
 
       const result = await service.findAll();
 
-      expect(theaterRepository.find).toHaveBeenCalledWith();
+      expect(theaterRepository.find).toHaveBeenCalledWith({});
       expect(result).toEqual(theaters);
     });
 
@@ -199,47 +199,21 @@ describe('TheatersService', () => {
   describe('remove', () => {
     it('should delete a theater if it exists and has no showtimes', async () => {
       const theaterId = 1;
-      const theater = {
-        id: theaterId,
-        name: 'Test Theater',
-        capacity: 100,
-        showtimes: [],
-      };
+      const deleteResult = { affected: 1 };
 
-      theaterRepository.findOne
-        .mockResolvedValueOnce(theater)
-        .mockResolvedValueOnce(theater);
+      theaterRepository.delete.mockResolvedValue(deleteResult);
 
-      theaterRepository.delete.mockResolvedValue({ affected: 1 });
+      const result = await service.remove(theaterId);
 
-      await service.remove(theaterId);
-
-      expect(theaterRepository.findOne).toHaveBeenCalledWith({
-        where: { id: theaterId },
-      });
-      expect(theaterRepository.findOne).toHaveBeenCalledWith({
-        where: { id: theaterId },
-        relations: ['showtimes'],
-      });
       expect(theaterRepository.delete).toHaveBeenCalledWith(theaterId);
+      expect(result).toEqual({ message: 'Theater deleted successfully' });
     });
 
     it('should throw BadRequestException if theater has associated showtimes', async () => {
       const theaterId = 1;
-      const theater = {
-        id: theaterId,
-        name: 'Test Theater',
-        capacity: 100,
-      };
+      const error = { code: '23503' };
 
-      const theaterWithShowtimes = {
-        ...theater,
-        showtimes: [{ id: 1 }],
-      };
-
-      theaterRepository.findOne
-        .mockResolvedValueOnce(theater)
-        .mockResolvedValueOnce(theaterWithShowtimes);
+      theaterRepository.delete.mockRejectedValue(error);
 
       await expect(service.remove(theaterId)).rejects.toThrow(
         new BadRequestException(
@@ -250,8 +224,9 @@ describe('TheatersService', () => {
 
     it('should throw NotFoundException if theater does not exist', async () => {
       const theaterId = 999;
+      const deleteResult = { affected: 0 };
 
-      theaterRepository.findOne.mockResolvedValue(null);
+      theaterRepository.delete.mockResolvedValue(deleteResult);
 
       await expect(service.remove(theaterId)).rejects.toThrow(
         new NotFoundException(`Theater with ID ${theaterId} not found`),
