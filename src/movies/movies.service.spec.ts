@@ -46,7 +46,7 @@ describe('MoviesService', () => {
       const createMovieDto = {
         title: 'Test Movie',
         genre: 'Action',
-        duration: 120,
+        durationInMinutes: 120,
         rating: 8.5,
         releaseYear: 2023,
       };
@@ -71,7 +71,7 @@ describe('MoviesService', () => {
           id: 1,
           title: 'Test Movie 1',
           genre: 'Action',
-          duration: 120,
+          durationInMinutes: 120,
           rating: 8.5,
           releaseYear: 2023,
         },
@@ -79,7 +79,7 @@ describe('MoviesService', () => {
           id: 2,
           title: 'Test Movie 2',
           genre: 'Comedy',
-          duration: 90,
+          durationInMinutes: 90,
           rating: 7.5,
           releaseYear: 2022,
         },
@@ -100,9 +100,17 @@ describe('MoviesService', () => {
           id: 1,
           title: 'Action Movie',
           genre: 'Action',
-          duration: 120,
+          durationInMinutes: 120,
           rating: 8.5,
           releaseYear: 2023,
+        },
+        {
+          id: 2,
+          title: 'Comedy Movie',
+          genre: 'Comedy',
+          durationInMinutes: 90,
+          rating: 7.5,
+          releaseYear: 2022,
         },
       ];
 
@@ -126,7 +134,7 @@ describe('MoviesService', () => {
         id: movieId,
         title: 'Test Movie',
         genre: 'Action',
-        duration: 120,
+        durationInMinutes: 120,
         rating: 8.5,
         releaseYear: 2023,
       };
@@ -159,7 +167,7 @@ describe('MoviesService', () => {
         id: movieId,
         title: 'Old Title',
         genre: 'Action',
-        duration: 120,
+        durationInMinutes: 120,
         rating: 8.5,
         releaseYear: 2023,
       };
@@ -167,7 +175,7 @@ describe('MoviesService', () => {
       const updateMovieDto = {
         title: 'Updated Title',
         genre: 'Comedy',
-        duration: 90,
+        durationInMinutes: 90,
         rating: 7.0,
         releaseYear: 2022,
       };
@@ -199,7 +207,7 @@ describe('MoviesService', () => {
       expect(savedEntity.id).toBe(movieId);
       expect(savedEntity.title).toBe('Updated Title');
       expect(savedEntity.genre).toBe('Comedy');
-      expect(savedEntity.duration).toBe(90);
+      expect(savedEntity.durationInMinutes).toBe(90);
       expect(savedEntity.rating).toBe(7.0);
       expect(savedEntity.releaseYear).toBe(2022);
 
@@ -211,7 +219,7 @@ describe('MoviesService', () => {
       const updateMovieDto = {
         title: 'Updated Title',
         genre: 'Action',
-        duration: 120,
+        durationInMinutes: 120,
         rating: 8.5,
         releaseYear: 2023,
       };
@@ -231,7 +239,7 @@ describe('MoviesService', () => {
         id: movieId,
         title: 'Test Movie',
         genre: 'Action',
-        duration: 120,
+        durationInMinutes: 120,
         rating: 8.5,
         releaseYear: 2023,
         showtimes: [],
@@ -261,7 +269,7 @@ describe('MoviesService', () => {
         id: movieId,
         title: 'Test Movie',
         genre: 'Action',
-        duration: 120,
+        durationInMinutes: 120,
         rating: 8.5,
         releaseYear: 2023,
       };

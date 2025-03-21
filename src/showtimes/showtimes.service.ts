@@ -32,7 +32,7 @@ export class ShowtimesService {
     if (createShowtimeDto.endTime) {
       endTime = new Date(createShowtimeDto.endTime);
     } else {
-      const durationInMs = movie.duration * 60 * 1000;
+      const durationInMs = movie.durationInMinutes * 60 * 1000;
       endTime = new Date(startTime.getTime() + durationInMs);
     }
 

@@ -171,7 +171,7 @@ describe('ShowtimesService', () => {
       const movie = {
         id: movieId,
         title: 'Test Movie',
-        duration: 120,
+        durationInMinutes: 120,
       };
       const theater = { id: theaterId, name: 'Test Theater' };
 
@@ -181,7 +181,9 @@ describe('ShowtimesService', () => {
 
       const startTime = new Date('2023-07-10T18:00:00Z');
       const expectedEndTime = new Date(startTime);
-      expectedEndTime.setMinutes(expectedEndTime.getMinutes() + movie.duration);
+      expectedEndTime.setMinutes(
+        expectedEndTime.getMinutes() + movie.durationInMinutes,
+      );
 
       showtimeRepository.create.mockReturnValue({
         movie,
