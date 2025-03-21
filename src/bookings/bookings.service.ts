@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, FindManyOptions } from 'typeorm';
 import { Booking } from './entities/booking.entity';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
@@ -19,12 +19,10 @@ export class BookingsService {
   ) {}
 
   async create(createBookingDto: CreateBookingDto) {
-    // Check if showtime exists
     const showtime = await this.showtimesService.findOne(
       createBookingDto.showtimeId,
     );
 
-    // Check if showtime has already started
     const now = new Date();
     if (new Date(showtime.startTime) < now) {
       throw new BadRequestException(
@@ -32,7 +30,6 @@ export class BookingsService {
       );
     }
 
-    // Check if seat is already booked
     const existingBooking = await this.bookingsRepository.findOne({
       where: {
         showtime: { id: createBookingDto.showtimeId },
@@ -70,12 +67,15 @@ export class BookingsService {
   }
 
   async findAll(userId?: string) {
-    const whereCondition = userId ? { userId } : {};
-
-    return this.bookingsRepository.find({
-      where: whereCondition,
+    const findOptions: FindManyOptions<Booking> = {
       relations: ['showtime'],
-    });
+    };
+
+    if (userId) {
+      findOptions.where = { userId };
+    }
+
+    return this.bookingsRepository.find(findOptions);
   }
 
   async findOne(id: string) {
