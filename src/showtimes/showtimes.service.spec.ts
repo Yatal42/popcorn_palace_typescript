@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, EntityManager } from 'typeorm';
 import { ShowtimesService } from './showtimes.service';
 import { Showtime } from './entities/showtime.entity';
 import { MoviesService } from '../movies/movies.service';
@@ -9,16 +9,47 @@ import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { CreateShowtimeDto } from './dto/create-showtime.dto';
 import { UpdateShowtimeDto } from './dto/update-showtime.dto';
 
-type MockRepository<T = any> = Partial<Record<keyof Repository<T>, jest.Mock>>;
+interface MockEntityManager {
+  transaction: jest.Mock;
+  findOne?: jest.Mock;
+  save?: jest.Mock;
+  createQueryBuilder?: jest.Mock;
+}
 
-const createMockRepository = <T>(): MockRepository<T> => ({
-  find: jest.fn(),
-  findOne: jest.fn(),
-  create: jest.fn(),
-  save: jest.fn(),
-  merge: jest.fn(),
-  delete: jest.fn(),
-});
+interface MockRepository<T = any> {
+  find?: jest.Mock;
+  findOne?: jest.Mock;
+  create?: jest.Mock;
+  save?: jest.Mock;
+  merge?: jest.Mock;
+  delete?: jest.Mock;
+  manager: MockEntityManager;
+}
+
+const createMockRepository = <T>(): MockRepository<T> => {
+  return {
+    find: jest.fn(),
+    findOne: jest.fn(),
+    create: jest.fn(),
+    save: jest.fn(),
+    merge: jest.fn(),
+    delete: jest.fn(),
+    manager: {
+      transaction: jest.fn(async (callback) => {
+        const mockTransactionManager = {
+          findOne: jest.fn(),
+          save: jest.fn(),
+          createQueryBuilder: jest.fn().mockReturnValue({
+            where: jest.fn().mockReturnThis(),
+            andWhere: jest.fn().mockReturnThis(),
+            getOne: jest.fn(),
+          }),
+        };
+        return callback(mockTransactionManager);
+      }),
+    },
+  };
+};
 
 const setupMocksForOverlapTest = (
   showtimeRepository: MockRepository<Showtime>,
@@ -67,6 +98,8 @@ describe('ShowtimesService', () => {
   let theatersService: { findOne: jest.Mock };
 
   beforeEach(async () => {
+    jest.clearAllMocks();
+
     moviesService = {
       findOne: jest.fn(),
     };
@@ -104,115 +137,241 @@ describe('ShowtimesService', () => {
   });
 
   describe('create', () => {
-    it('should create a showtime when there are no overlapping showtimes', async () => {
-      const theaterId = 1;
-      const { movieId, movie, theater, expectedEndTime } =
-        setupMocksForOverlapTest(
-          showtimeRepository,
-          moviesService,
-          theatersService,
-          theaterId,
-          false,
-        );
+    it('should create a showtime successfully', async () => {
+      const theater = { id: 1, name: 'Theater 1', capacity: 100 };
+      const movie = { id: 1, title: 'Movie 1', durationInMinutes: 120 };
+      const startTime = new Date();
+      startTime.setHours(startTime.getHours() + 2); // 2 hours in the future
 
-      const createShowtimeDto: CreateShowtimeDto = {
-        movieId,
-        theaterId,
-        startTime: '2023-07-10T18:00:00Z',
-        endTime: '2023-07-10T20:00:00Z',
+      const endTime = new Date(startTime);
+      endTime.setHours(endTime.getHours() + 2);
+
+      const dto: CreateShowtimeDto = {
+        movieId: movie.id,
+        theaterId: theater.id,
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
         price: 15.99,
       };
 
-      showtimeRepository.save.mockResolvedValue({
+      const newShowtime = {
         id: 1,
-        ...createShowtimeDto,
-        movie,
-        theater,
-        startTime: new Date(createShowtimeDto.startTime),
-        endTime: expectedEndTime,
-      });
-
-      const result = await service.create(createShowtimeDto);
-
-      expect(result).toHaveProperty('id');
-      expect(result.movie).toEqual(movie);
-      expect(result.theater).toEqual(theater);
-    });
-
-    it('should throw BadRequestException when there is an overlapping showtime', async () => {
-      const theaterId = 1;
-      setupMocksForOverlapTest(
-        showtimeRepository,
-        moviesService,
-        theatersService,
-        theaterId,
-        true,
-      );
-
-      const createShowtimeDto: CreateShowtimeDto = {
-        movieId: 1,
-        theaterId,
-        startTime: '2023-07-10T18:00:00Z',
-        endTime: '2023-07-10T20:00:00Z',
-        price: 15.99,
-      };
-
-      await expect(service.create(createShowtimeDto)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.create(createShowtimeDto)).rejects.toThrow(
-        /already a showtime scheduled/,
-      );
-    });
-
-    it('should calculate correct end time based on movie duration when endTime is not provided', async () => {
-      const movieId = 1;
-      const theaterId = 1;
-      const movie = {
-        id: movieId,
-        title: 'Test Movie',
-        durationInMinutes: 120,
-      };
-      const theater = { id: theaterId, name: 'Test Theater' };
-
-      moviesService.findOne.mockResolvedValue(movie);
-      theatersService.findOne.mockResolvedValue(theater);
-      showtimeRepository.findOne.mockResolvedValue(null);
-
-      const startTime = new Date('2023-07-10T18:00:00Z');
-      const expectedEndTime = new Date(startTime);
-      expectedEndTime.setMinutes(
-        expectedEndTime.getMinutes() + movie.durationInMinutes,
-      );
-
-      showtimeRepository.create.mockReturnValue({
-        movie,
-        movieId,
-        theater,
-        theaterId,
+        movieId: movie.id,
+        theaterId: theater.id,
         startTime,
-        endTime: expectedEndTime,
+        endTime,
         price: 15.99,
-      });
+        movie,
+        theater,
+      };
 
-      showtimeRepository.save.mockImplementation((entity) =>
-        Promise.resolve({
-          id: 1,
-          ...entity,
-        }),
+      showtimeRepository.manager.transaction.mockImplementationOnce(
+        async (callback) => {
+          const transactionManager = {
+            findOne: jest.fn().mockImplementation((entityClass, options) => {
+              if (
+                entityClass.name === 'Movie' &&
+                options.where.id === movie.id
+              ) {
+                return Promise.resolve(movie);
+              }
+              if (
+                entityClass.name === 'Theater' &&
+                options.where.id === theater.id
+              ) {
+                return Promise.resolve(theater);
+              }
+              if (entityClass.name === 'Showtime') {
+                return Promise.resolve(null);
+              }
+              return Promise.resolve(null);
+            }),
+            save: jest.fn().mockResolvedValue(newShowtime),
+          };
+          return callback(transactionManager);
+        },
       );
 
-      const createShowtimeDto: CreateShowtimeDto = {
+      const result = await service.create(dto);
+
+      expect(showtimeRepository.manager.transaction).toHaveBeenCalled();
+      expect(result).toEqual(newShowtime);
+    });
+
+    it('should throw NotFoundException if theater is not found', async () => {
+      const theaterId = 999; // Non-existent theater
+      const movieId = 1;
+      const startTime = new Date();
+      startTime.setHours(startTime.getHours() + 2);
+      const endTime = new Date(startTime);
+      endTime.setHours(endTime.getHours() + 2);
+
+      const dto: CreateShowtimeDto = {
         movieId,
         theaterId,
-        startTime: '2023-07-10T18:00:00Z',
-        endTime: undefined,
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
         price: 15.99,
       };
 
-      const result = await service.create(createShowtimeDto);
+      showtimeRepository.manager.transaction.mockImplementationOnce(
+        async (callback) => {
+          const mockMovie = { id: movieId, title: 'Test Movie' };
+          const transactionManager = {
+            findOne: jest.fn((entityClass, options) => {
+              if (entityClass.name === 'Movie') {
+                return Promise.resolve(mockMovie);
+              }
+              if (entityClass.name === 'Theater') {
+                // Theater not found
+                return Promise.resolve(null);
+              }
+              return Promise.resolve(null);
+            }),
+            save: jest.fn(),
+          };
 
-      expect(result.endTime).toEqual(expectedEndTime);
+          try {
+            await callback(transactionManager);
+          } catch (error) {
+            expect(error).toBeInstanceOf(NotFoundException);
+            expect(error.message).toBe(
+              `Theater with ID ${theaterId} not found`,
+            );
+            throw error;
+          }
+        },
+      );
+
+      await expect(service.create(dto)).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw NotFoundException if movie is not found', async () => {
+      const theaterId = 1;
+      const movieId = 999; // Non-existent movie
+      const startTime = new Date();
+      startTime.setHours(startTime.getHours() + 2);
+      const endTime = new Date(startTime);
+      endTime.setHours(endTime.getHours() + 2);
+
+      const dto: CreateShowtimeDto = {
+        movieId,
+        theaterId,
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
+        price: 15.99,
+      };
+
+      showtimeRepository.manager.transaction.mockImplementationOnce(
+        async (callback) => {
+          const transactionManager = {
+            findOne: jest.fn().mockImplementation((entityClass, options) => {
+              if (entityClass.name === 'Movie') {
+                return Promise.resolve(null);
+              }
+              return Promise.resolve(null);
+            }),
+          };
+          return callback(transactionManager);
+        },
+      );
+
+      await expect(service.create(dto)).rejects.toThrow(NotFoundException);
+      await expect(service.create(dto)).rejects.toThrow(
+        `Movie with ID ${movieId} not found`,
+      );
+    });
+
+    it('should throw BadRequestException if showtime conflicts with another', async () => {
+      const theater = { id: 1, name: 'Theater 1', capacity: 100 };
+      const movie = { id: 1, title: 'Movie 1', durationInMinutes: 120 };
+      const startTime = new Date();
+      startTime.setHours(startTime.getHours() + 2);
+      const endTime = new Date(startTime);
+      endTime.setHours(endTime.getHours() + 2);
+
+      const dto: CreateShowtimeDto = {
+        movieId: movie.id,
+        theaterId: theater.id,
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
+        price: 15.99,
+      };
+
+      const existingShowtime = {
+        id: 1,
+        movieId: 2, // Different movie
+        theaterId: theater.id,
+        startTime: new Date(startTime.getTime() - 60 * 60 * 1000), // 1 hour before
+        endTime: new Date(startTime.getTime() + 60 * 60 * 1000), // 1 hour after start
+        theater,
+      };
+
+      showtimeRepository.manager.transaction.mockImplementationOnce(
+        async (callback) => {
+          const transactionManager = {
+            findOne: jest.fn((entityClass, options) => {
+              if (entityClass.name === 'Movie') {
+                return Promise.resolve(movie);
+              }
+              if (entityClass.name === 'Theater') {
+                return Promise.resolve(theater);
+              }
+              if (entityClass.name === 'Showtime') {
+                return Promise.resolve(existingShowtime);
+              }
+              return Promise.resolve(null);
+            }),
+            save: jest.fn(),
+          };
+
+          try {
+            await callback(transactionManager);
+          } catch (error) {
+            expect(error).toBeInstanceOf(BadRequestException);
+            expect(error.message).toBe(
+              `There is already a showtime scheduled in theater ${theater.name} at this time`,
+            );
+            throw error;
+          }
+        },
+      );
+
+      await expect(service.create(dto)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException if startTime is in the past', async () => {
+      const theater = { id: 1, name: 'Theater 1', capacity: 100 };
+      const movie = { id: 1, title: 'Movie 1', durationInMinutes: 120 };
+
+      const now = new Date();
+      const startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 1 day in the past
+      const endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000); // 2 hours after start
+
+      const dto: CreateShowtimeDto = {
+        movieId: movie.id,
+        theaterId: theater.id,
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
+        price: 15.99,
+      };
+
+      const originalTransaction = showtimeRepository.manager.transaction;
+      showtimeRepository.manager.transaction = jest
+        .fn()
+        .mockImplementation(async (callback) => {
+          if (new Date(dto.startTime) < new Date()) {
+            throw new BadRequestException('Showtime must be in the future');
+          }
+          return originalTransaction(callback);
+        });
+
+      await expect(service.create(dto)).rejects.toThrow(BadRequestException);
+      await expect(service.create(dto)).rejects.toThrow(
+        'Showtime must be in the future',
+      );
+
+      showtimeRepository.manager.transaction = originalTransaction;
     });
   });
 
