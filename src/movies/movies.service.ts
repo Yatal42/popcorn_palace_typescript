@@ -9,43 +9,80 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, FindManyOptions } from 'typeorm';
 import { Movie } from './entities/movie.entity';
 import { CreateMovieDto } from './dto/create-movie.dto';
+import { AppLoggerService } from '../common/services/logger.service';
 
 @Injectable()
 export class MoviesService {
+  private readonly logger = new AppLoggerService(MoviesService.name);
+
   constructor(
     @InjectRepository(Movie)
     private moviesRepository: Repository<Movie>,
   ) {}
 
   create(createMovieDto: CreateMovieDto) {
-    const movie = this.moviesRepository.create(createMovieDto);
-    return this.moviesRepository.save(movie);
+    try {
+      const movie = this.moviesRepository.create(createMovieDto);
+      return this.moviesRepository.save(movie);
+    } catch (error) {
+      this.logger.logDatabaseError(error, 'create', 'Movie');
+      throw new InternalServerErrorException(
+        `Error occurred while creating movie: ${error.message}`,
+      );
+    }
   }
 
   findAll(title?: string) {
-    const findOptions: FindManyOptions<Movie> = {};
+    try {
+      const findOptions: FindManyOptions<Movie> = {};
 
-    if (title) {
-      findOptions.where = {
-        title: Like(`%${title}%`),
-      };
+      if (title) {
+        findOptions.where = {
+          title: Like(`%${title}%`),
+        };
+      }
+
+      return this.moviesRepository.find(findOptions);
+    } catch (error) {
+      this.logger.logDatabaseError(error, 'findAll', 'Movie');
+      throw new InternalServerErrorException(
+        `Error occurred while fetching movies: ${error.message}`,
+      );
     }
-
-    return this.moviesRepository.find(findOptions);
   }
 
   async findOne(id: number) {
-    const movie = await this.moviesRepository.findOne({ where: { id } });
-    if (!movie) {
-      throw new NotFoundException(`Movie with ID ${id} not found`);
+    try {
+      const movie = await this.moviesRepository.findOne({ where: { id } });
+      if (!movie) {
+        throw new NotFoundException(`Movie with ID ${id} not found`);
+      }
+      return movie;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.logDatabaseError(error, 'findOne', 'Movie');
+      throw new InternalServerErrorException(
+        `Error occurred while fetching movie: ${error.message}`,
+      );
     }
-    return movie;
   }
 
   async update(id: number, updateMovieDto: CreateMovieDto) {
-    const movie = await this.findOne(id);
-    this.moviesRepository.merge(movie, updateMovieDto);
-    return this.moviesRepository.save(movie);
+    try {
+      const movie = await this.findOne(id);
+      this.moviesRepository.merge(movie, updateMovieDto);
+      return this.moviesRepository.save(movie);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.logDatabaseError(error, 'update', 'Movie');
+      throw new InternalServerErrorException(
+        `Error occurred while updating movie: ${error.message}`,
+      );
+    }
   }
 
   async remove(id: number) {
@@ -68,6 +105,7 @@ export class MoviesService {
         throw error;
       }
 
+      this.logger.logDatabaseError(error, 'remove', 'Movie');
       throw new InternalServerErrorException(
         'Error occurred while deleting movie',
       );
@@ -75,27 +113,51 @@ export class MoviesService {
   }
 
   async updateByTitle(movieTitle: string, updateMovieDto: CreateMovieDto) {
-    const movie = await this.moviesRepository.findOne({
-      where: { title: movieTitle },
-    });
+    try {
+      const movie = await this.moviesRepository.findOne({
+        where: { title: movieTitle },
+      });
 
-    if (!movie) {
-      throw new NotFoundException(`Movie with title "${movieTitle}" not found`);
+      if (!movie) {
+        throw new NotFoundException(
+          `Movie with title "${movieTitle}" not found`,
+        );
+      }
+
+      Object.assign(movie, updateMovieDto);
+      return this.moviesRepository.save(movie);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.logDatabaseError(error, 'updateByTitle', 'Movie');
+      throw new InternalServerErrorException(
+        `Error occurred while updating movie by title: ${error.message}`,
+      );
     }
-
-    Object.assign(movie, updateMovieDto);
-    return this.moviesRepository.save(movie);
   }
 
   async removeByTitle(movieTitle: string) {
-    const movie = await this.moviesRepository.findOne({
-      where: { title: movieTitle },
-    });
+    try {
+      const movie = await this.moviesRepository.findOne({
+        where: { title: movieTitle },
+      });
 
-    if (!movie) {
-      throw new NotFoundException(`Movie with title "${movieTitle}" not found`);
+      if (!movie) {
+        throw new NotFoundException(
+          `Movie with title "${movieTitle}" not found`,
+        );
+      }
+
+      return this.moviesRepository.remove(movie);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.logDatabaseError(error, 'removeByTitle', 'Movie');
+      throw new InternalServerErrorException(
+        `Error occurred while removing movie by title: ${error.message}`,
+      );
     }
-
-    return this.moviesRepository.remove(movie);
   }
 }

@@ -5,6 +5,7 @@ import { MoviesModule } from './movies/movies.module';
 import { TheatersModule } from './theaters/theaters.module';
 import { ShowtimesModule } from './showtimes/showtimes.module';
 import { BookingsModule } from './bookings/bookings.module';
+import { CommonModule } from './common/common.module';
 import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
 
@@ -32,6 +33,7 @@ import databaseConfig from './config/database.config';
       },
       inject: [ConfigService],
     }),
+    CommonModule,
     MoviesModule,
     TheatersModule,
     ShowtimesModule,
