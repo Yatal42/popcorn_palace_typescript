@@ -7,7 +7,7 @@ import {
   Body,
   Param,
   ParseIntPipe,
-  Query,
+  HttpCode,
 } from '@nestjs/common';
 import { MoviesService } from './movies.service';
 import { CreateMovieDto } from './dto/create-movie.dto';
@@ -17,13 +17,19 @@ export class MoviesController {
   constructor(private readonly moviesService: MoviesService) {}
 
   @Post()
+  @HttpCode(200)
   create(@Body() createMovieDto: CreateMovieDto) {
     return this.moviesService.create(createMovieDto);
   }
 
+  @Get('all')
+  findAll() {
+    return this.moviesService.findAll();
+  }
+
   @Get()
-  findAll(@Query('title') title?: string) {
-    return this.moviesService.findAll(title);
+  findAllDefault() {
+    return this.moviesService.findAll();
   }
 
   @Get(':id')
@@ -31,16 +37,33 @@ export class MoviesController {
     return this.moviesService.findOne(id);
   }
 
-  @Patch(':id')
+  @Post('update/:movieTitle')
+  @HttpCode(200)
   update(
+    @Param('movieTitle') movieTitle: string,
+    @Body() updateMovieDto: CreateMovieDto,
+  ) {
+    return this.moviesService.updateByTitle(movieTitle, updateMovieDto);
+  }
+
+  @Patch(':id')
+  @HttpCode(200)
+  patchUpdate(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateMovieDto: CreateMovieDto,
   ) {
     return this.moviesService.update(id, updateMovieDto);
   }
 
+  @Delete('title/:movieTitle')
+  @HttpCode(200)
+  removeByTitle(@Param('movieTitle') movieTitle: string) {
+    return this.moviesService.removeByTitle(movieTitle);
+  }
+
   @Delete(':id')
-  remove(@Param('id', ParseIntPipe) id: number) {
+  @HttpCode(200)
+  removeById(@Param('id', ParseIntPipe) id: number) {
     return this.moviesService.remove(id);
   }
 }

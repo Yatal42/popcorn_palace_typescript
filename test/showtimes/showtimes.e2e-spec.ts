@@ -41,7 +41,7 @@ describe('Showtimes API (e2e)', () => {
         .post('/showtimes')
         .send(showtimeData);
 
-      expect(response.status).toBe(201);
+      expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('id');
       expect(response.body.movie.id).toBe(movie.id);
       expect(response.body.theaterId).toBe(theater.id);

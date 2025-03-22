@@ -26,7 +26,7 @@ describe('Theaters API (e2e)', () => {
         .post('/theaters')
         .send(theaterData);
 
-      expect(response.status).toBe(201);
+      expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('id');
       expect(response.body.name).toBe(theaterData.name);
       expect(response.body.capacity).toBe(theaterData.capacity);

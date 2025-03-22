@@ -101,6 +101,15 @@ export async function createTestShowtime(
   return response.body;
 }
 
+// Function to generate a simple UUID-like string
+function generateUUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0,
+      v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 export async function createTestBooking(
   app: INestApplication,
   showtimeId: number,
@@ -110,14 +119,33 @@ export async function createTestBooking(
     showtimeId,
     seatNumber: Math.floor(Math.random() * 50) + 1, // Random seat
     userId: `user-${Date.now()}`,
+    idempotencyKey: generateUUID(),
     ...bookingData,
   };
 
-  const response = await request(app.getHttpServer())
-    .post('/bookings')
-    .send(defaultBooking);
+  try {
+    const response = await request(app.getHttpServer())
+      .post('/bookings')
+      .send(defaultBooking);
 
-  return response.body;
+    console.log(`Booking response status: ${response.status}`);
+
+    if (response.status >= 400) {
+      console.error(
+        `Booking creation failed with ${response.status}:`,
+        response.body,
+      );
+      console.error('Request data was:', defaultBooking);
+      throw new Error(
+        `Failed to create test booking with status ${response.status}: ${JSON.stringify(response.body)}`,
+      );
+    }
+
+    return response.body;
+  } catch (error) {
+    console.error('Error creating test booking:', error);
+    throw error;
+  }
 }
 
 export async function setupCommonTestData(app: INestApplication) {
@@ -141,6 +169,7 @@ export async function createMultipleBookings(
       showtimeId,
       seatNumber: i,
       userId: `batch-user-${Date.now()}-${i}`,
+      idempotencyKey: generateUUID(),
       ...baseData,
     };
 
