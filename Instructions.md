@@ -48,39 +48,29 @@ For testing, the application automatically uses a separate test database with `_
 
 ### Database Setup
 
-The application uses PostgreSQL in Docker:
-
-```bash
-docker-compose up -d
-```
-
-TypeORM automatically creates the necessary tables when the application starts.
+The application uses PostgreSQL in Docker. TypeORM automatically creates the necessary tables when the application starts.
 
 ### Building and Running
 
+For development:
 ```bash
-# Install dependencies
-npm install
+npm run start:dev  # Auto-reloads on file changes
+```
 
-# Build the application
+For production deployment:
+```bash
 npm run build
-
-# Start in development mode (with auto-reload)
-npm run start:dev
-
-# Start in production mode
-npm run start:prod
+npm run start
 ```
 
 ## Features
 
 ### Logging System
 
-The application includes a robust centralized logging system:
+The application includes a centralized logging system based on NestJS's built-in Logger:
 
 - **Configuration:** Log levels are set in `main.ts`
-- **Usage:** Use `AppLoggerService` in your services for consistent logging
-- **Available Methods:**
+- **Methods:**
   - `log()` - Standard information
   - `error()` - Error details with stack traces
   - `warn()` - Warning messages
@@ -91,8 +81,7 @@ The application includes a robust centralized logging system:
 
 The application implements consistent error handling:
 
-- Detailed error messages with appropriate HTTP status codes
-- Standardized error response format via `HttpExceptionFilter`
+- HTTP status codes for appropriate error responses
 - Service-level try-catch blocks for graceful error handling
 - Special handling for database-specific errors
 
@@ -106,18 +95,7 @@ npm run test:e2e
 
 # Run a specific test file
 npm run test:e2e -- test/movies/movies.e2e-spec.ts
-
-# Run unit tests
-npm run test
 ```
-
-### Test Structure
-
-Tests are organized by module:
-- `test/movies/` - Movie API tests
-- `test/theaters/` - Theater API tests
-- `test/showtimes/` - Showtime API tests 
-- `test/bookings/` - Booking API tests
 
 ## API Reference
 
@@ -215,15 +193,12 @@ POST /bookings
 
 ### Database Issues
 - Verify Docker is running: `docker ps`
-- Check database connection in logs
 - Ensure database credentials match `.env` file
 
 ### Test Failures
 - Clear test database: `docker-compose down -v && docker-compose up -d`
 - Rebuild application: `npm run build`
-- Update dependencies: `npm install`
 
 ### Logging Issues
 - Check error details in console output
 - Verify log level configuration in `main.ts`
-- Ensure services use `AppLoggerService` for logging
