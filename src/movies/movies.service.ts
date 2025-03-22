@@ -73,4 +73,29 @@ export class MoviesService {
       );
     }
   }
+
+  async updateByTitle(movieTitle: string, updateMovieDto: CreateMovieDto) {
+    const movie = await this.moviesRepository.findOne({
+      where: { title: movieTitle },
+    });
+
+    if (!movie) {
+      throw new NotFoundException(`Movie with title "${movieTitle}" not found`);
+    }
+
+    Object.assign(movie, updateMovieDto);
+    return this.moviesRepository.save(movie);
+  }
+
+  async removeByTitle(movieTitle: string) {
+    const movie = await this.moviesRepository.findOne({
+      where: { title: movieTitle },
+    });
+
+    if (!movie) {
+      throw new NotFoundException(`Movie with title "${movieTitle}" not found`);
+    }
+
+    return this.moviesRepository.remove(movie);
+  }
 }

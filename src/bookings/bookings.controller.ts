@@ -6,6 +6,7 @@ import {
   Param,
   Delete,
   Query,
+  HttpCode,
 } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
@@ -15,6 +16,7 @@ export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
 
   @Post()
+  @HttpCode(200)
   create(@Body() createBookingDto: CreateBookingDto) {
     return this.bookingsService.create(createBookingDto);
   }
@@ -30,6 +32,7 @@ export class BookingsController {
   }
 
   @Delete(':id')
+  @HttpCode(200)
   remove(@Param('id') id: string) {
     return this.bookingsService.remove(id);
   }

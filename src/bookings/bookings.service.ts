@@ -11,6 +11,7 @@ import { Booking } from './entities/booking.entity';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { ShowtimesService } from '../showtimes/showtimes.service';
+import { Showtime } from '../showtimes/entities/showtime.entity';
 
 @Injectable()
 export class BookingsService {
@@ -21,51 +22,102 @@ export class BookingsService {
   ) {}
 
   async create(createBookingDto: CreateBookingDto) {
-    const showtime = await this.showtimesService.findOne(
-      createBookingDto.showtimeId,
-    );
+    try {
+      if (createBookingDto.idempotencyKey) {
+        const existingBookingWithKey = await this.bookingsRepository.findOne({
+          where: { idempotencyKey: createBookingDto.idempotencyKey },
+          relations: ['showtime'],
+        });
 
-    const now = new Date();
-    if (new Date(showtime.startTime) < now) {
-      throw new BadRequestException(
-        'Cannot book for a showtime that has already started',
+        if (existingBookingWithKey) {
+          return existingBookingWithKey;
+        }
+      }
+
+      return this.bookingsRepository.manager.transaction(
+        async (transactionalEntityManager) => {
+          const showtime = await transactionalEntityManager
+            .createQueryBuilder(Showtime, 'showtime')
+            .innerJoinAndSelect('showtime.theater', 'theater')
+            .where('showtime.id = :id', { id: createBookingDto.showtimeId })
+            .setLock('pessimistic_write')
+            .getOne();
+
+          if (!showtime) {
+            throw new NotFoundException(
+              `Showtime with ID "${createBookingDto.showtimeId}" not found`,
+            );
+          }
+
+          const now = new Date();
+          if (new Date(showtime.startTime) < now) {
+            throw new BadRequestException(
+              'Cannot book for a showtime that has already started',
+            );
+          }
+
+          const existingBooking = await transactionalEntityManager.findOne(
+            Booking,
+            {
+              where: {
+                showtime: { id: createBookingDto.showtimeId },
+                seatNumber: createBookingDto.seatNumber,
+              },
+            },
+          );
+
+          if (existingBooking) {
+            throw new BadRequestException('Seat is already booked');
+          }
+
+          if (createBookingDto.seatNumber > showtime.theater.capacity) {
+            throw new BadRequestException(
+              `Seat number ${createBookingDto.seatNumber} exceeds theater capacity of ${showtime.theater.capacity}`,
+            );
+          }
+
+          const existingBookingsCount = await transactionalEntityManager.count(
+            Booking,
+            {
+              where: { showtime: { id: createBookingDto.showtimeId } },
+            },
+          );
+
+          if (existingBookingsCount >= showtime.theater.capacity) {
+            throw new BadRequestException(
+              `Cannot book - theater capacity of ${showtime.theater.capacity} has been reached`,
+            );
+          }
+
+          const booking = new Booking();
+          booking.showtime = showtime;
+          booking.showtimeId = showtime.id;
+          booking.seatNumber = createBookingDto.seatNumber;
+          booking.userId = createBookingDto.userId;
+          if (createBookingDto.idempotencyKey) {
+            booking.idempotencyKey = createBookingDto.idempotencyKey;
+          }
+
+          return transactionalEntityManager.save(booking);
+        },
+      );
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      console.error('Booking error:', error.message, error.stack);
+
+      if (error.code) {
+        console.error(
+          `SQL Error Code: ${error.code}, Detail: ${error.detail || 'No detail'}`,
+        );
+      }
+
+      throw new InternalServerErrorException(
+        `Error occurred while processing booking: ${error.message}`,
       );
     }
-
-    const existingBooking = await this.bookingsRepository.findOne({
-      where: {
-        showtime: { id: createBookingDto.showtimeId },
-        seatNumber: createBookingDto.seatNumber,
-      },
-    });
-
-    if (existingBooking) {
-      throw new BadRequestException('Seat is already booked');
-    }
-
-    if (createBookingDto.seatNumber > showtime.theater.capacity) {
-      throw new BadRequestException(
-        `seat number ${createBookingDto.seatNumber} exceeds theater capacity of ${showtime.theater.capacity}`,
-      );
-    }
-
-    const existingBookingsCount = await this.bookingsRepository.count({
-      where: { showtime: { id: createBookingDto.showtimeId } },
-    });
-
-    if (existingBookingsCount >= showtime.theater.capacity) {
-      throw new BadRequestException(
-        `Cannot book - theater capacity of ${showtime.theater.capacity} has been reached`,
-      );
-    }
-
-    const booking = this.bookingsRepository.create({
-      showtime,
-      seatNumber: createBookingDto.seatNumber,
-      userId: createBookingDto.userId,
-    });
-
-    return this.bookingsRepository.save(booking);
   }
 
   async findAll(userId?: string) {

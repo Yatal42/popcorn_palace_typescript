@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   ParseIntPipe,
+  HttpCode,
 } from '@nestjs/common';
 import { ShowtimesService } from './showtimes.service';
 import { CreateShowtimeDto } from './dto/create-showtime.dto';
@@ -17,6 +18,7 @@ export class ShowtimesController {
   constructor(private readonly showtimesService: ShowtimesService) {}
 
   @Post()
+  @HttpCode(200)
   create(@Body() createShowtimeDto: CreateShowtimeDto) {
     return this.showtimesService.create(createShowtimeDto);
   }
@@ -26,21 +28,32 @@ export class ShowtimesController {
     return this.showtimesService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.showtimesService.findOne(id);
+  @Get(':showtimeId')
+  findOne(@Param('showtimeId', ParseIntPipe) showtimeId: number) {
+    return this.showtimesService.findOne(showtimeId);
   }
 
-  @Patch(':id')
+  @Post('update/:showtimeId')
+  @HttpCode(200)
   update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('showtimeId', ParseIntPipe) showtimeId: number,
     @Body() updateShowtimeDto: UpdateShowtimeDto,
   ) {
-    return this.showtimesService.update(id, updateShowtimeDto);
+    return this.showtimesService.update(showtimeId, updateShowtimeDto);
   }
 
-  @Delete(':id')
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.showtimesService.remove(id);
+  @Patch(':showtimeId')
+  @HttpCode(200)
+  patchUpdate(
+    @Param('showtimeId', ParseIntPipe) showtimeId: number,
+    @Body() updateShowtimeDto: UpdateShowtimeDto,
+  ) {
+    return this.showtimesService.update(showtimeId, updateShowtimeDto);
+  }
+
+  @Delete(':showtimeId')
+  @HttpCode(200)
+  remove(@Param('showtimeId', ParseIntPipe) showtimeId: number) {
+    return this.showtimesService.remove(showtimeId);
   }
 }

@@ -29,7 +29,7 @@ describe('Movies API (e2e)', () => {
         .post('/movies')
         .send(movieData);
 
-      expect(response.status).toBe(201);
+      expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('id');
       expect(response.body.title).toBe(movieData.title);
       expect(response.body.genre).toBe(movieData.genre);

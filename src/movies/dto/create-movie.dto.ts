@@ -1,6 +1,7 @@
 import {
   IsString,
   IsNumber,
+  IsInt,
   Min,
   Max,
   Length,
@@ -10,7 +11,7 @@ import {
 export class CreateMovieDto {
   @IsString()
   @IsNotEmpty()
-  @Length(1, 100)
+  @Length(1, 100, { message: 'Title must be between 1 and 100 characters' })
   title: string;
 
   @IsString()
@@ -18,17 +19,18 @@ export class CreateMovieDto {
   @Length(1, 50)
   genre: string;
 
-  @IsNumber()
-  @Min(1)
-  @Max(600) // 10 hours max
+  @IsInt()
+  @Min(1, { message: 'Duration must be at least 1 minute' })
+  @Max(600, { message: 'Duration cannot exceed 10 hours (600 minutes)' })
   durationInMinutes: number;
 
   @IsNumber()
-  @Min(0)
-  @Max(10)
+  @Min(0, { message: 'Rating cannot be negative' })
+  @Max(10, { message: 'Rating cannot exceed 10' })
   rating: number;
 
-  @IsNumber()
-  @Min(1900)
+  @IsInt()
+  @Min(1900, { message: 'Release year must be after 1900' })
+  @Max(2100, { message: 'Release year seems too far in the future' })
   releaseYear: number;
 }
