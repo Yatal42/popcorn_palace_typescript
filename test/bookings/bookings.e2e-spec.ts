@@ -7,7 +7,6 @@ import {
   cleanupTest,
 } from '../utils/test-setup';
 
-// Function to generate a simple UUID-like string
 function generateUUID() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
     const r = (Math.random() * 16) | 0,
@@ -174,10 +173,8 @@ describe('Bookings API (e2e)', () => {
         .post('/bookings')
         .send(invalidBookingData);
 
-      // Accept either 4xx or 500 status codes for now
       expect(response.status).toBeGreaterThanOrEqual(400);
 
-      // Only check message content if it's a 4xx status
       if (response.status < 500) {
         expect(response.body.message.toLowerCase()).toContain('seat number');
       }

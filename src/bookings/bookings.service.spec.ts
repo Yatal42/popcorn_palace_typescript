@@ -7,62 +7,25 @@ import { ShowtimesService } from '../showtimes/showtimes.service';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { CreateBookingDto } from './dto/create-booking.dto';
 
-type MockRepository<T = any> = Partial<Record<keyof Repository<T>, jest.Mock>>;
-
-const createMockRepository = <T>(): MockRepository<T> => ({
-  find: jest.fn(),
-  findOne: jest.fn(),
-  create: jest.fn(),
-  save: jest.fn(),
-  merge: jest.fn(),
-  delete: jest.fn(),
-  count: jest.fn(),
-});
-
-const setupBasicMocks = (
-  bookingRepository: MockRepository<Booking>,
-  showtimesService: { findOne: jest.Mock },
-  showtimeId: number,
-  validSeat = true,
-  showtimeStarted = false,
-  theaterCapacity = 100,
-) => {
-  const showtime = {
-    id: showtimeId,
-    theaterId: 1,
-    theater: {
-      id: 1,
-      capacity: theaterCapacity,
-    },
-    startTime: showtimeStarted
-      ? new Date(Date.now() - 1000) // 1 second ago
-      : new Date(Date.now() + 3600000), // 1 hour in the future
-  };
-
-  showtimesService.findOne.mockResolvedValue(showtime);
-
-  if (!validSeat) {
-    bookingRepository.findOne.mockResolvedValue({
-      id: 'b1',
-      showtimeId,
-      seatNumber: 5, // The seat is already booked
-      userId: 'user-1',
-    });
-  } else {
-    bookingRepository.findOne.mockResolvedValue(null);
-  }
-
-  bookingRepository.count.mockResolvedValue(0); // Default to 0 existing bookings
-
-  return { showtime };
-};
-
 describe('BookingsService', () => {
   let service: BookingsService;
-  let bookingRepository: MockRepository<Booking>;
-  let showtimesService: { findOne: jest.Mock };
+  let bookingRepository: any;
+  let showtimesService: any;
 
   beforeEach(async () => {
+    bookingRepository = {
+      find: jest.fn(),
+      findOne: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+      merge: jest.fn(),
+      delete: jest.fn(),
+      count: jest.fn(),
+      manager: {
+        transaction: jest.fn(),
+      },
+    };
+
     showtimesService = {
       findOne: jest.fn(),
     };
@@ -72,7 +35,7 @@ describe('BookingsService', () => {
         BookingsService,
         {
           provide: getRepositoryToken(Booking),
-          useValue: createMockRepository(),
+          useValue: bookingRepository,
         },
         {
           provide: ShowtimesService,
@@ -82,9 +45,6 @@ describe('BookingsService', () => {
     }).compile();
 
     service = module.get<BookingsService>(BookingsService);
-    bookingRepository = module.get<MockRepository<Booking>>(
-      getRepositoryToken(Booking),
-    );
   });
 
   it('should be defined', () => {
@@ -97,16 +57,14 @@ describe('BookingsService', () => {
       const seatNumber = 5;
       const userId = 'user-1';
 
-      const { showtime } = setupBasicMocks(
-        bookingRepository,
-        showtimesService,
-        showtimeId,
-      );
-
-      const createBookingDto: CreateBookingDto = {
-        showtimeId,
-        seatNumber,
-        userId,
+      const showtime = {
+        id: showtimeId,
+        theaterId: 1,
+        theater: {
+          id: 1,
+          capacity: 100,
+        },
+        startTime: new Date(Date.now() + 3600000), // 1 hour in the future
       };
 
       const newBooking = {
@@ -117,12 +75,36 @@ describe('BookingsService', () => {
         userId,
       };
 
-      bookingRepository.create.mockReturnValue(newBooking);
-      bookingRepository.save.mockResolvedValue(newBooking);
+      bookingRepository.manager.transaction.mockImplementation(
+        async (callback) => {
+          const mockQueryBuilder = {
+            innerJoinAndSelect: jest.fn().mockReturnThis(),
+            where: jest.fn().mockReturnThis(),
+            setLock: jest.fn().mockReturnThis(),
+            getOne: jest.fn().mockResolvedValue(showtime),
+          };
+
+          const mockEntityManager = {
+            createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder),
+            findOne: jest.fn().mockResolvedValue(null), // No existing booking
+            count: jest.fn().mockResolvedValue(0), // No bookings for this seat
+            save: jest.fn().mockResolvedValue(newBooking),
+          };
+
+          return await callback(mockEntityManager);
+        },
+      );
+
+      const createBookingDto: CreateBookingDto = {
+        showtimeId,
+        seatNumber,
+        userId,
+      };
 
       const result = await service.create(createBookingDto);
 
       expect(result).toEqual(newBooking);
+      expect(bookingRepository.manager.transaction).toHaveBeenCalled();
     });
 
     it('should throw BadRequestException if showtime has already started', async () => {
@@ -130,12 +112,34 @@ describe('BookingsService', () => {
       const seatNumber = 5;
       const userId = 'user-1';
 
-      setupBasicMocks(
-        bookingRepository,
-        showtimesService,
-        showtimeId,
-        true,
-        true, // Showtime has started
+      const startedShowtime = {
+        id: showtimeId,
+        theaterId: 1,
+        theater: {
+          id: 1,
+          capacity: 100,
+        },
+        startTime: new Date(Date.now() - 1000), // 1 second ago
+      };
+
+      bookingRepository.manager.transaction.mockImplementation(
+        async (callback) => {
+          const mockQueryBuilder = {
+            innerJoinAndSelect: jest.fn().mockReturnThis(),
+            where: jest.fn().mockReturnThis(),
+            setLock: jest.fn().mockReturnThis(),
+            getOne: jest.fn().mockResolvedValue(startedShowtime),
+          };
+
+          const mockEntityManager = {
+            createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder),
+            findOne: jest.fn(),
+            count: jest.fn(),
+            save: jest.fn(),
+          };
+
+          return await callback(mockEntityManager);
+        },
       );
 
       const createBookingDto: CreateBookingDto = {
@@ -157,11 +161,41 @@ describe('BookingsService', () => {
       const seatNumber = 5;
       const userId = 'user-1';
 
-      setupBasicMocks(
-        bookingRepository,
-        showtimesService,
+      const showtime = {
+        id: showtimeId,
+        theaterId: 1,
+        theater: {
+          id: 1,
+          capacity: 100,
+        },
+        startTime: new Date(Date.now() + 3600000), // 1 hour in future
+      };
+
+      const existingBooking = {
+        id: 'b1',
         showtimeId,
-        false, // Seat is not available
+        seatNumber,
+        userId: 'other-user',
+      };
+
+      bookingRepository.manager.transaction.mockImplementation(
+        async (callback) => {
+          const mockQueryBuilder = {
+            innerJoinAndSelect: jest.fn().mockReturnThis(),
+            where: jest.fn().mockReturnThis(),
+            setLock: jest.fn().mockReturnThis(),
+            getOne: jest.fn().mockResolvedValue(showtime),
+          };
+
+          const mockEntityManager = {
+            createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder),
+            findOne: jest.fn().mockResolvedValue(existingBooking),
+            count: jest.fn(),
+            save: jest.fn(),
+          };
+
+          return await callback(mockEntityManager);
+        },
       );
 
       const createBookingDto: CreateBookingDto = {
@@ -183,13 +217,34 @@ describe('BookingsService', () => {
       const seatNumber = 150; // Exceeds capacity of 100
       const userId = 'user-1';
 
-      setupBasicMocks(
-        bookingRepository,
-        showtimesService,
-        showtimeId,
-        true, // Seat is available
-        false, // Showtime hasn't started
-        100, // Theater capacity
+      const showtime = {
+        id: showtimeId,
+        theaterId: 1,
+        theater: {
+          id: 1,
+          capacity: 100,
+        },
+        startTime: new Date(Date.now() + 3600000), // 1 hour in future
+      };
+
+      bookingRepository.manager.transaction.mockImplementation(
+        async (callback) => {
+          const mockQueryBuilder = {
+            innerJoinAndSelect: jest.fn().mockReturnThis(),
+            where: jest.fn().mockReturnThis(),
+            setLock: jest.fn().mockReturnThis(),
+            getOne: jest.fn().mockResolvedValue(showtime),
+          };
+
+          const mockEntityManager = {
+            createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder),
+            findOne: jest.fn().mockResolvedValue(null), // No existing booking
+            count: jest.fn().mockResolvedValue(0),
+            save: jest.fn(),
+          };
+
+          return await callback(mockEntityManager);
+        },
       );
 
       const createBookingDto: CreateBookingDto = {
@@ -202,7 +257,7 @@ describe('BookingsService', () => {
         BadRequestException,
       );
       await expect(service.create(createBookingDto)).rejects.toThrow(
-        `seat number ${seatNumber} exceeds theater capacity of 100`,
+        `Seat number ${seatNumber} exceeds theater capacity of 100`,
       );
     });
   });

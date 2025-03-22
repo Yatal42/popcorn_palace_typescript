@@ -26,25 +26,51 @@ The API will be available at `http://localhost:3000`.
 
 ## Prerequisites
 
-- Node.js (v14 or higher)
-- npm
-- Docker (for PostgreSQL database)
+- **Node.js**: v14 or higher (v16 recommended)
+- **npm**: v7 or higher
+- **Docker**: v20.10 or higher
+  - Docker Compose v2.x
+  - 2GB+ available memory for containers
+- **Operating System**:
+  - macOS 10.15+
+  - Windows 10+ with WSL2
+  - Linux (Ubuntu 20.04+ or similar)
+- **Development**:
+  - Git
+  - Terminal application
+  - 4GB+ RAM
+  - 10GB+ free disk space
 
 ## Detailed Setup
 
 ### Environment Configuration
 
-Create a `.env` file in the root directory with:
+The application uses two environment files:
+
+1. **For development**: Create a `.env` file in the root directory with:
 
 ```
 DATABASE_HOST=localhost
 DATABASE_PORT=5432
-DATABASE_USERNAME=postgres
+DATABASE_USER=postgres
 DATABASE_PASSWORD=postgres
 DATABASE_NAME=popcorn_palace
+NODE_ENV=development
+PORT=3000
 ```
 
-For testing, the application automatically uses a separate test database with `_test` appended to the database name.
+2. **For testing**: Create a `.env.test` file in the root directory with:
+
+```
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_USER=postgres
+DATABASE_PASSWORD=postgres
+DATABASE_NAME=popcorn_palace_test
+NODE_ENV=test
+```
+
+> **Note**: The application has default values for these settings, but it's recommended to create the appropriate environment files to avoid connection issues. Make sure your PostgreSQL server allows connections with the specified credentials.
 
 ### Database Setup
 
@@ -54,13 +80,13 @@ The application uses PostgreSQL in Docker. TypeORM automatically creates the nec
 
 For development:
 ```bash
-npm run start:dev  # Auto-reloads on file changes
+npm run start:dev  
 ```
 
 For production deployment:
 ```bash
 npm run build
-npm run start
+npm run start:prod  
 ```
 
 ## Features
@@ -90,10 +116,13 @@ The application implements consistent error handling:
 ### Running Tests
 
 ```bash
-# Run all end-to-end tests
+# Run all end-to-end tests (creates test DB, runs tests, exits)
 npm run test:e2e
 
-# Run a specific test file
+# Run unit tests
+npm run test
+
+# Run a specific end-to-end test file
 npm run test:e2e -- test/movies/movies.e2e-spec.ts
 ```
 
