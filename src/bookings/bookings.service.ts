@@ -12,9 +12,12 @@ import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { ShowtimesService } from '../showtimes/showtimes.service';
 import { Showtime } from '../showtimes/entities/showtime.entity';
+import { AppLoggerService } from '../common/services/logger.service';
 
 @Injectable()
 export class BookingsService {
+  private readonly logger = new AppLoggerService(BookingsService.name);
+
   constructor(
     @InjectRepository(Booking)
     private bookingsRepository: Repository<Booking>,
@@ -106,13 +109,7 @@ export class BookingsService {
         throw error;
       }
 
-      console.error('Booking error:', error.message, error.stack);
-
-      if (error.code) {
-        console.error(
-          `SQL Error Code: ${error.code}, Detail: ${error.detail || 'No detail'}`,
-        );
-      }
+      this.logger.logDatabaseError(error, 'create', 'Booking');
 
       throw new InternalServerErrorException(
         `Error occurred while processing booking: ${error.message}`,
@@ -121,34 +118,61 @@ export class BookingsService {
   }
 
   async findAll(userId?: string) {
-    const findOptions: FindManyOptions<Booking> = {
-      relations: ['showtime'],
-    };
+    try {
+      const findOptions: FindManyOptions<Booking> = {
+        relations: ['showtime'],
+      };
 
-    if (userId) {
-      findOptions.where = { userId };
+      if (userId) {
+        findOptions.where = { userId };
+      }
+
+      return this.bookingsRepository.find(findOptions);
+    } catch (error) {
+      this.logger.logDatabaseError(error, 'findAll', 'Booking');
+      throw new InternalServerErrorException(
+        `Error occurred while fetching bookings: ${error.message}`,
+      );
     }
-
-    return this.bookingsRepository.find(findOptions);
   }
 
   async findOne(id: string) {
-    const booking = await this.bookingsRepository.findOne({
-      where: { id },
-      relations: ['showtime'],
-    });
+    try {
+      const booking = await this.bookingsRepository.findOne({
+        where: { id },
+        relations: ['showtime'],
+      });
 
-    if (!booking) {
-      throw new NotFoundException(`Booking with ID "${id}" not found`);
+      if (!booking) {
+        throw new NotFoundException(`Booking with ID "${id}" not found`);
+      }
+
+      return booking;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.logDatabaseError(error, 'findOne', 'Booking');
+      throw new InternalServerErrorException(
+        `Error occurred while fetching booking: ${error.message}`,
+      );
     }
-
-    return booking;
   }
 
   async update(id: string, updateBookingDto: UpdateBookingDto) {
-    const booking = await this.findOne(id);
-    Object.assign(booking, updateBookingDto);
-    return this.bookingsRepository.save(booking);
+    try {
+      const booking = await this.findOne(id);
+      Object.assign(booking, updateBookingDto);
+      return this.bookingsRepository.save(booking);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.logDatabaseError(error, 'update', 'Booking');
+      throw new InternalServerErrorException(
+        `Error occurred while updating booking: ${error.message}`,
+      );
+    }
   }
 
   async remove(id: string) {
@@ -164,6 +188,8 @@ export class BookingsService {
       if (error instanceof HttpException) {
         throw error;
       }
+
+      this.logger.logDatabaseError(error, 'remove', 'Booking');
 
       throw new InternalServerErrorException(
         'Error occurred while deleting booking',
