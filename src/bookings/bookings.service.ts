@@ -100,8 +100,18 @@ export class BookingsService {
         findOptions.where = { userId };
       }
 
-      return this.bookingsRepository.find(findOptions);
+      const bookings = await this.bookingsRepository.find(findOptions);
+
+      if (userId && bookings.length === 0) {
+        throw new NotFoundException(`No bookings found for user ID: ${userId}`);
+      }
+
+      return bookings;
     } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
       this.logger.logDatabaseError(error, 'findAll', 'Booking');
       throw new InternalServerErrorException(
         'Failed to fetch bookings. Please try again later.',
