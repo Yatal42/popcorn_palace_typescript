@@ -138,8 +138,7 @@ describe('Bookings API (e2e)', () => {
         .post('/bookings')
         .send(duplicateBookingData);
 
-      expect(response.status).toBeGreaterThanOrEqual(400);
-      expect(response.status).toBeLessThan(500);
+      expect(response.status).toBe(409);
       expect(response.body.message.toLowerCase()).toContain('already booked');
     });
 

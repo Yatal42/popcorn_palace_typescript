@@ -34,71 +34,55 @@ export class ShowtimesService {
 
   async create(createShowtimeDto: CreateShowtimeDto) {
     try {
-      return this.showtimesRepository.manager.transaction(
-        async (transactionalEntityManager) => {
-          const movie = await transactionalEntityManager.findOne(Movie, {
-            where: { id: createShowtimeDto.movieId },
-          });
+      const movie = await this.moviesService.findOne(createShowtimeDto.movieId);
 
-          if (!movie) {
-            throw new NotFoundException(
-              `Movie with ID ${createShowtimeDto.movieId} not found`,
-            );
-          }
-
-          const theater = await transactionalEntityManager.findOne(Theater, {
-            where: { id: createShowtimeDto.theaterId },
-            lock: { mode: 'pessimistic_write' }, // Lock the theater record
-          });
-
-          if (!theater) {
-            throw new NotFoundException(
-              `Theater with ID ${createShowtimeDto.theaterId} not found`,
-            );
-          }
-
-          const startTime = new Date(createShowtimeDto.startTime);
-          let endTime;
-
-          if (createShowtimeDto.endTime) {
-            endTime = new Date(createShowtimeDto.endTime);
-          } else {
-            const durationInMs = movie.durationInMinutes * 60 * 1000;
-            endTime = new Date(startTime.getTime() + durationInMs);
-          }
-
-          // This query will be consistent due to the theater lock
-          const overlappingShowtime = await transactionalEntityManager.findOne(
-            Showtime,
-            {
-              where: [
-                {
-                  theaterId: createShowtimeDto.theaterId,
-                  startTime: LessThanOrEqual(endTime),
-                  endTime: MoreThanOrEqual(startTime),
-                },
-              ],
-            },
-          );
-
-          if (overlappingShowtime) {
-            throw new BadRequestException(
-              `There is already a showtime scheduled in theater ${theater.name} at this time`,
-            );
-          }
-
-          const showtime = new Showtime();
-          showtime.movie = movie;
-          showtime.movieId = movie.id;
-          showtime.theater = theater;
-          showtime.theaterId = theater.id;
-          showtime.startTime = startTime;
-          showtime.endTime = endTime;
-          showtime.price = createShowtimeDto.price;
-
-          return transactionalEntityManager.save(showtime);
-        },
+      const theater = await this.theatersService.findOne(
+        createShowtimeDto.theaterId,
       );
+
+      const startTime = new Date(createShowtimeDto.startTime);
+      const now = new Date();
+
+      if (startTime < now) {
+        throw new BadRequestException(
+          'Showtime cannot be scheduled in the past',
+        );
+      }
+
+      let endTime;
+      if (createShowtimeDto.endTime) {
+        endTime = new Date(createShowtimeDto.endTime);
+      } else {
+        const durationInMs = movie.durationInMinutes * 60 * 1000;
+        endTime = new Date(startTime.getTime() + durationInMs);
+      }
+
+      const overlappingShowtime = await this.showtimesRepository.findOne({
+        where: [
+          {
+            theaterId: createShowtimeDto.theaterId,
+            startTime: LessThanOrEqual(endTime),
+            endTime: MoreThanOrEqual(startTime),
+          },
+        ],
+      });
+
+      if (overlappingShowtime) {
+        throw new BadRequestException(
+          `There is already a showtime scheduled in theater ${theater.name} at this time`,
+        );
+      }
+
+      const showtime = new Showtime();
+      showtime.movie = movie;
+      showtime.movieId = movie.id;
+      showtime.theater = theater;
+      showtime.theaterId = theater.id;
+      showtime.startTime = startTime;
+      showtime.endTime = endTime;
+      showtime.price = createShowtimeDto.price;
+
+      return this.showtimesRepository.save(showtime);
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
