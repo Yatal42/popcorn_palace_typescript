@@ -2,6 +2,13 @@
 
 This document provides instructions for setting up and using the Popcorn Palace movie theater API.
 
+## Prerequisites
+
+- **Node.js**: A recent version of Node.js
+- **npm**: Compatible with your Node.js version
+- **Docker**: Docker with Docker Compose support
+  - 2GB+ available memory for containers
+
 ## Quick Start
 
 1. **Set up environment:**
@@ -23,20 +30,6 @@ This document provides instructions for setting up and using the Popcorn Palace 
    ```
 
 The API will be available at `http://localhost:3000`.
-
-## Prerequisites
-
-- **Node.js**: A recent version of Node.js
-- **npm**: Compatible with your Node.js version
-- **Docker**: Docker with Docker Compose support
-  - 2GB+ available memory for containers
-- **Operating System**:
-  - macOS, Windows with WSL2, or Linux
-- **Development**:
-  - Git
-  - Terminal application
-  - 4GB+ RAM
-  - 10GB+ free disk space
 
 ## Detailed Setup
 

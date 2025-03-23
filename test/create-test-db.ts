@@ -1,4 +1,15 @@
 import { Client } from 'pg';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+const envFile = process.env.NODE_ENV === 'test' ? '.env.test' : '.env';
+const envPath = path.resolve(process.cwd(), envFile);
+dotenv.config({ path: envPath });
+
+console.log(`Using environment file: ${envPath}`);
+console.log(
+  `Database connection details: ${process.env.DATABASE_HOST}:${process.env.DATABASE_PORT}`,
+);
 
 export async function createTestDatabase(): Promise<boolean> {
   try {
