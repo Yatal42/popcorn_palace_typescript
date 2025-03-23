@@ -4,7 +4,7 @@ import { Movie } from '../src/movies/entities/movie.entity';
 import { Theater } from '../src/theaters/entities/theater.entity';
 import { Showtime } from '../src/showtimes/entities/showtime.entity';
 import { Booking } from '../src/bookings/entities/booking.entity';
-const { createTestDatabase } = require('./create-test-db');
+import { createTestDatabase } from './create-test-db';
 
 process.env.NODE_ENV = 'test';
 process.env.DATABASE_NAME = 'popcorn_palace_test';
