@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -7,6 +7,10 @@ import { ConfigModule } from '@nestjs/config';
 import { waitForDatabase, clearTables, testDataSource } from '../setup';
 import { HttpExceptionFilter } from '../../src/common/filters/http-exception.filter';
 import { v4 as generateUUID } from 'uuid';
+import { CreateMovieDto } from '../../src/movies/dto/create-movie.dto';
+import { CreateTheaterDto } from '../../src/theaters/dto/create-theater.dto';
+import { CreateShowtimeDto } from '../../src/showtimes/dto/create-showtime.dto';
+import { CreateBookingDto } from '../../src/bookings/dto/create-booking.dto';
 
 let appInstance: INestApplication | null = null;
 
@@ -45,9 +49,9 @@ export async function setupTestApp(): Promise<INestApplication> {
 
 export async function createTestMovie(
   app: INestApplication,
-  movieData: any = {},
+  movieData: Partial<CreateMovieDto> = {},
 ) {
-  const defaultMovie = {
+  const defaultMovie: CreateMovieDto = {
     title: `Test Movie ${Date.now()}`,
     genre: 'Action',
     durationInMinutes: 120,
@@ -65,9 +69,9 @@ export async function createTestMovie(
 
 export async function createTestTheater(
   app: INestApplication,
-  theaterData: any = {},
+  theaterData: Partial<CreateTheaterDto> = {},
 ) {
-  const defaultTheater = {
+  const defaultTheater: CreateTheaterDto = {
     name: `Test Theater ${Date.now()}`,
     capacity: 100,
     ...theaterData,
@@ -84,15 +88,19 @@ export async function createTestShowtime(
   app: INestApplication,
   movieId: number,
   theaterId: number,
-  showtimeData: any = {},
+  showtimeData: Partial<CreateShowtimeDto> = {},
 ) {
   const startTime = new Date();
   startTime.setHours(startTime.getHours() + 1);
 
-  const defaultShowtime = {
+  const endTime = new Date(startTime);
+  endTime.setMinutes(endTime.getMinutes() + 120); // Default 2 hour movie
+
+  const defaultShowtime: CreateShowtimeDto = {
     movieId,
     theaterId,
     startTime: startTime.toISOString(),
+    endTime: endTime.toISOString(),
     price: 15.99,
     ...showtimeData,
   };
@@ -107,9 +115,9 @@ export async function createTestShowtime(
 export async function createTestBooking(
   app: INestApplication,
   showtimeId: number,
-  bookingData: any = {},
+  bookingData: Partial<CreateBookingDto> = {},
 ) {
-  const defaultBooking = {
+  const defaultBooking: CreateBookingDto = {
     showtimeId,
     seatNumber: Math.floor(Math.random() * 50) + 1, // Random seat
     userId: `user-${Date.now()}`,
@@ -154,12 +162,12 @@ export async function createMultipleBookings(
   app: INestApplication,
   showtimeId: number,
   count: number,
-  baseData: any = {},
+  baseData: Partial<CreateBookingDto> = {},
 ) {
   const bookingPromises = [];
 
   for (let i = 1; i <= count; i++) {
-    const bookingData = {
+    const bookingData: CreateBookingDto = {
       showtimeId,
       seatNumber: i,
       userId: `batch-user-${Date.now()}-${i}`,
