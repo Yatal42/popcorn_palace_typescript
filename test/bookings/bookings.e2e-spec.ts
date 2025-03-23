@@ -7,6 +7,8 @@ import {
   cleanupTest,
 } from '../utils/test-setup';
 import { v4 as generateUUID } from 'uuid';
+import { DataSource } from 'typeorm';
+import { Showtime } from '../../src/showtimes/entities/showtime.entity';
 
 describe('Bookings API (e2e)', () => {
   let app: INestApplication;
@@ -197,6 +199,79 @@ describe('Bookings API (e2e)', () => {
       if (response.status < 500) {
         expect(response.body.message.toLowerCase()).toContain('seat number');
       }
+    });
+
+    it('should prevent bookings when theater is at full capacity', async () => {
+      const smallTheater = await request(app.getHttpServer())
+        .post('/theaters')
+        .send({
+          name: 'Small Test Theater',
+          capacity: 3, // Very small capacity for testing
+        })
+        .expect(200);
+
+      const showtime = await request(app.getHttpServer())
+        .post('/showtimes')
+        .send({
+          movieId: commonData.movie.id,
+          theaterId: smallTheater.body.id,
+          startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // tomorrow
+          price: 10.99,
+        })
+        .expect(200);
+
+      for (let seat = 1; seat <= 3; seat++) {
+        await request(app.getHttpServer())
+          .post('/bookings')
+          .send({
+            showtimeId: showtime.body.id,
+            seatNumber: seat,
+            userId: `user-${seat}`,
+            idempotencyKey: generateUUID(),
+          })
+          .expect(200);
+      }
+
+      const response = await request(app.getHttpServer())
+        .post('/bookings')
+        .send({
+          showtimeId: showtime.body.id,
+          seatNumber: 1,
+          userId: 'extra-user',
+          idempotencyKey: generateUUID(),
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message.toLowerCase()).toContain('capacity');
+    });
+
+    it('should prevent bookings for past showtimes', async () => {
+      const connection = app.get(DataSource);
+      const showtimeRepository = connection.getRepository(Showtime);
+
+      const startTime = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+      const endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000);
+
+      const pastShowtime = await showtimeRepository.save({
+        movieId: commonData.movie.id,
+        theaterId: commonData.theater.id,
+        startTime: startTime,
+        endTime: endTime,
+        price: 10.99,
+      });
+
+      const response = await request(app.getHttpServer())
+        .post('/bookings')
+        .send({
+          showtimeId: pastShowtime.id,
+          seatNumber: 1,
+          userId: 'past-user',
+          idempotencyKey: generateUUID(),
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message.toLowerCase()).toContain('already started');
     });
   });
 });
