@@ -82,10 +82,8 @@ export class ShowtimesService {
 
       const result = await this.showtimesRepository.save(showtime);
 
-      // Create log message with movie and theater names
       let logMessage = `Showtime created successfully: ID ${result.id} at ${startTime.toISOString()}`;
 
-      // We should have both of these from the earlier steps, but add safety checks
       if (movie?.title) {
         logMessage = `Showtime created successfully: Movie "${movie.title}"`;
 

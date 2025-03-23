@@ -10,8 +10,13 @@ import { CreateMovieDto } from '../../src/movies/dto/create-movie.dto';
 import { CreateTheaterDto } from '../../src/theaters/dto/create-theater.dto';
 import { CreateShowtimeDto } from '../../src/showtimes/dto/create-showtime.dto';
 import { CreateBookingDto } from '../../src/bookings/dto/create-booking.dto';
+import { AppLoggerService } from '../../src/common/services/logger.service';
+import { TestLogger } from './test-logger';
 
 let appInstance: INestApplication | null = null;
+
+// Create a logger instance
+const logger = new TestLogger('TestSetup');
 
 export async function setupTestApp(): Promise<INestApplication> {
   if (appInstance) {
@@ -138,19 +143,16 @@ export async function createTestBooking(
       .post('/bookings')
       .send(defaultBooking);
 
-    console.log(`Booking response status: ${response.status}`);
-
-    if (response.status >= 400) {
-      console.error(
-        `Booking creation failed with ${response.status}:`,
-        response.body,
+    if (response.status !== 200) {
+      logger.error(
+        `Booking creation failed with status ${response.status}: ${JSON.stringify(response.body)}`,
       );
-      console.error('Request data was:', defaultBooking);
+      logger.debug('Request data was:', defaultBooking);
     }
 
     return response;
   } catch (e) {
-    console.error('Booking creation failed with exception:', e);
+    logger.error('Booking creation failed with exception:', e);
     throw e;
   }
 }
