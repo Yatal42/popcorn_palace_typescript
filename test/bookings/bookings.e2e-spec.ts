@@ -34,20 +34,47 @@ describe('Bookings API (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .post('/bookings')
-        .send(bookingData);
+        .send(bookingData)
+        .expect(200);
 
-      expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('id');
-
-      if (response.body.showtimeId) {
-        expect(response.body.showtimeId).toBe(commonData.showtime.id);
-      } else if (response.body.showtime) {
-        expect(response.body.showtime.id).toBe(commonData.showtime.id);
-      }
-      expect(response.body.seatNumber).toBe(10);
-      expect(response.body.userId).toBe('test-user');
+      expect(response.body).toMatchObject({
+        id: expect.any(String),
+        userId: bookingData.userId,
+        seatNumber: bookingData.seatNumber,
+        showtimeId: bookingData.showtimeId,
+      });
 
       createdBookingId = response.body.id;
+    });
+
+    it('should return the same booking when using the same idempotency key', async () => {
+      const idempotencyKey = generateUUID();
+
+      const bookingData = {
+        showtimeId: commonData.showtime.id,
+        seatNumber: 25, // Using a different seat to avoid conflicts
+        userId: 'test-user-idempotency',
+        idempotencyKey: idempotencyKey,
+      };
+
+      const firstResponse = await request(app.getHttpServer())
+        .post('/bookings')
+        .send(bookingData)
+        .expect(200);
+
+      const firstBookingId = firstResponse.body.id;
+
+      const secondResponse = await request(app.getHttpServer())
+        .post('/bookings')
+        .send(bookingData)
+        .expect(200);
+
+      expect(secondResponse.body.id).toBe(firstBookingId);
+      expect(secondResponse.body).toMatchObject({
+        userId: bookingData.userId,
+        seatNumber: bookingData.seatNumber,
+        showtimeId: bookingData.showtimeId,
+      });
     });
 
     it('should get all bookings', async () => {
