@@ -88,7 +88,7 @@ export class ShowtimesService {
 
       this.logger.logDatabaseError(error, 'create', 'Showtime');
       throw new InternalServerErrorException(
-        `Error occurred while creating showtime: ${error.message}`,
+        'Failed to create showtime. Please try again later.',
       );
     }
   }
@@ -103,7 +103,7 @@ export class ShowtimesService {
     } catch (error) {
       this.logger.logDatabaseError(error, 'findAll', 'Showtime');
       throw new InternalServerErrorException(
-        `Error occurred while fetching showtimes: ${error.message}`,
+        'Failed to fetch showtimes. Please try again later.',
       );
     }
   }
@@ -126,7 +126,7 @@ export class ShowtimesService {
       }
       this.logger.logDatabaseError(error, 'findOne', 'Showtime');
       throw new InternalServerErrorException(
-        `Error occurred while fetching showtime: ${error.message}`,
+        'Failed to fetch showtime. Please try again later.',
       );
     }
   }
@@ -170,7 +170,7 @@ export class ShowtimesService {
       }
       this.logger.logDatabaseError(error, 'update', 'Showtime');
       throw new InternalServerErrorException(
-        `Error occurred while updating showtime: ${error.message}`,
+        'Failed to update showtime. Please try again later.',
       );
     }
   }
@@ -197,7 +197,7 @@ export class ShowtimesService {
 
       this.logger.logDatabaseError(error, 'remove', 'Showtime');
       throw new InternalServerErrorException(
-        'Error occurred while deleting showtime',
+        'Failed to delete showtime. Please try again later.',
       );
     }
   }
