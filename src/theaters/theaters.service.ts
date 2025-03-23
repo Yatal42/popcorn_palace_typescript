@@ -20,10 +20,14 @@ export class TheatersService {
     private theatersRepository: Repository<Theater>,
   ) {}
 
-  create(createTheaterDto: CreateTheaterDto) {
+  async create(createTheaterDto: CreateTheaterDto) {
     try {
       const theater = this.theatersRepository.create(createTheaterDto);
-      return this.theatersRepository.save(theater);
+      const result = await this.theatersRepository.save(theater);
+      this.logger.log(
+        `Theater created successfully: ${result.name} (ID: ${result.id})`,
+      );
+      return result;
     } catch (error) {
       this.logger.logDatabaseError(error, 'create', 'Theater');
       throw new InternalServerErrorException(
@@ -83,7 +87,11 @@ export class TheatersService {
     try {
       const theater = await this.findOne(id);
       this.theatersRepository.merge(theater, updateTheaterDto);
-      return this.theatersRepository.save(theater);
+      const result = await this.theatersRepository.save(theater);
+      this.logger.log(
+        `Theater updated successfully: ${result.name} (ID: ${result.id})`,
+      );
+      return result;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -103,6 +111,7 @@ export class TheatersService {
         throw new NotFoundException(`Theater with ID ${id} not found`);
       }
 
+      this.logger.log(`Theater deleted successfully: ID ${id}`);
       return { message: 'Theater deleted successfully' };
     } catch (error) {
       if (error.code === '23503') {

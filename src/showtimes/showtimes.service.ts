@@ -80,7 +80,24 @@ export class ShowtimesService {
       showtime.endTime = endTime;
       showtime.price = createShowtimeDto.price;
 
-      return this.showtimesRepository.save(showtime);
+      const result = await this.showtimesRepository.save(showtime);
+
+      // Create log message with movie and theater names
+      let logMessage = `Showtime created successfully: ID ${result.id} at ${startTime.toISOString()}`;
+
+      // We should have both of these from the earlier steps, but add safety checks
+      if (movie?.title) {
+        logMessage = `Showtime created successfully: Movie "${movie.title}"`;
+
+        if (theater?.name) {
+          logMessage += ` in Theater "${theater.name}"`;
+        }
+
+        logMessage += ` at ${startTime.toISOString()} (ID: ${result.id})`;
+      }
+
+      this.logger.log(logMessage);
+      return result;
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
@@ -168,7 +185,20 @@ export class ShowtimesService {
 
       Object.assign(showtime, updates);
 
-      return this.showtimesRepository.save(showtime);
+      const result = await this.showtimesRepository.save(showtime);
+
+      let logMessage = `Showtime updated successfully: ID ${result.id}`;
+
+      if (result.movie?.title) {
+        logMessage += `, Movie "${result.movie.title}"`;
+      }
+
+      if (result.theater?.name) {
+        logMessage += ` in Theater "${result.theater.name}"`;
+      }
+
+      this.logger.log(logMessage);
+      return result;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -188,6 +218,7 @@ export class ShowtimesService {
         throw new NotFoundException(`Showtime with ID ${id} not found`);
       }
 
+      this.logger.log(`Showtime deleted successfully: ID ${id}`);
       return { message: 'Showtime deleted successfully' };
     } catch (error) {
       if (error.code === '23503') {
