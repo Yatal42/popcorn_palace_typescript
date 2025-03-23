@@ -5,6 +5,7 @@ import { AppModule } from '../../src/app.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { waitForDatabase, clearTables, testDataSource } from '../setup';
+import { HttpExceptionFilter } from '../../src/common/filters/http-exception.filter';
 
 let appInstance: INestApplication | null = null;
 
@@ -34,6 +35,7 @@ export async function setupTestApp(): Promise<INestApplication> {
 
   appInstance = moduleFixture.createNestApplication();
   await appInstance.init();
+  appInstance.useGlobalFilters(new HttpExceptionFilter());
 
   await new Promise((resolve) => setTimeout(resolve, 1000));
 

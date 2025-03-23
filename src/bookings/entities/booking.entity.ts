@@ -5,10 +5,12 @@ import {
   ManyToOne,
   JoinColumn,
   CreateDateColumn,
+  Unique,
 } from 'typeorm';
 import { Showtime } from '../../showtimes/entities/showtime.entity';
 
 @Entity()
+@Unique('UQ_showtime_seat', ['showtimeId', 'seatNumber'])
 export class Booking {
   @PrimaryGeneratedColumn('uuid')
   id: string;

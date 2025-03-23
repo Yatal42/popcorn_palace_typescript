@@ -5,6 +5,7 @@ import {
   ManyToOne,
   OneToMany,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { Movie } from '../../movies/entities/movie.entity';
 import { Booking } from '../../bookings/entities/booking.entity';
@@ -26,12 +27,15 @@ export class Showtime {
   @JoinColumn({ name: 'theater_id' })
   theater: Theater;
 
+  @Index()
   @Column({ name: 'theater_id' })
   theaterId: number;
 
+  @Index()
   @Column({ name: 'start_time' })
   startTime: Date;
 
+  @Index()
   @Column({ name: 'end_time' })
   endTime: Date;
 
