@@ -77,6 +77,8 @@ describe('Movies API (e2e)', () => {
         .patch(`/movies/${createdMovieId}`)
         .send(updateData);
 
+      console.log('Update response:', response.status, response.body);
+
       expect(response.status).toBe(200);
       expect(response.body.title).toBe(updateData.title);
       expect(response.body.rating).toBe(updateData.rating);
@@ -95,6 +97,61 @@ describe('Movies API (e2e)', () => {
       );
 
       expect(getResponse.status).toBe(404);
+    });
+
+    it('should reject a movie with negative duration', async () => {
+      const invalidMovieData = {
+        title: 'Negative Duration Movie',
+        genre: 'Drama',
+        durationInMinutes: -30, // Negative duration
+        rating: 7.5,
+        releaseYear: 2023,
+      };
+
+      const response = await request(app.getHttpServer())
+        .post('/movies')
+        .send(invalidMovieData);
+
+      expect(response.status).toBe(400);
+      expect(response.body.message[0]).toContain('Duration');
+    });
+  });
+
+  describe('Movie Validation', () => {
+    it('should accept a movie with valid duration', async () => {
+      const validMovieData = {
+        title: 'Valid Duration Movie',
+        genre: 'Drama',
+        durationInMinutes: 90,
+        rating: 7.5,
+        releaseYear: 2023,
+      };
+
+      const response = await request(app.getHttpServer())
+        .post('/movies')
+        .send(validMovieData);
+
+      expect(response.status).toBe(200);
+      expect(response.body.durationInMinutes).toBe(
+        validMovieData.durationInMinutes,
+      );
+    });
+
+    it('should reject a movie with too long title', async () => {
+      const invalidMovieData = {
+        title: 'A'.repeat(101), // 101 characters, exceeding the 100 character limit
+        genre: 'Drama',
+        durationInMinutes: 90,
+        rating: 7.5,
+        releaseYear: 2023,
+      };
+
+      const response = await request(app.getHttpServer())
+        .post('/movies')
+        .send(invalidMovieData);
+
+      expect(response.status).toBe(400);
+      expect(response.body.message[0]).toContain('Title');
     });
   });
 });

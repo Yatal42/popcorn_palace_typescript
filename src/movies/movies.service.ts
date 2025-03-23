@@ -9,6 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, FindManyOptions } from 'typeorm';
 import { Movie } from './entities/movie.entity';
 import { CreateMovieDto } from './dto/create-movie.dto';
+import { UpdateMovieDto } from './dto/update-movie.dto';
 import { AppLoggerService } from '../common/services/logger.service';
 
 @Injectable()
@@ -69,7 +70,7 @@ export class MoviesService {
     }
   }
 
-  async update(id: number, updateMovieDto: CreateMovieDto) {
+  async update(id: number, updateMovieDto: UpdateMovieDto) {
     try {
       const movie = await this.findOne(id);
       this.moviesRepository.merge(movie, updateMovieDto);
@@ -112,7 +113,7 @@ export class MoviesService {
     }
   }
 
-  async updateByTitle(movieTitle: string, updateMovieDto: CreateMovieDto) {
+  async updateByTitle(movieTitle: string, updateMovieDto: UpdateMovieDto) {
     try {
       const movie = await this.moviesRepository.findOne({
         where: { title: movieTitle },

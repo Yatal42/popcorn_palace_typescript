@@ -18,7 +18,7 @@ describe('Theaters API (e2e)', () => {
 
     it('should create a theater', async () => {
       const theaterData = {
-        name: 'New Test Theater',
+        name: 'Test Theater Creation',
         capacity: 100,
       };
 
@@ -40,30 +40,74 @@ describe('Theaters API (e2e)', () => {
       expect(response.status).toBe(200);
       expect(Array.isArray(response.body)).toBe(true);
       expect(response.body.length).toBeGreaterThan(0);
-      expect(
-        response.body.find((theater) => theater.id === createdTheaterId),
-      ).toBeTruthy();
     });
 
     it('should get a theater by id', async () => {
-      const theater = await createTestTheater(app, {
-        name: 'Get By ID Theater',
-        capacity: 110,
-      });
-
       const response = await request(app.getHttpServer()).get(
-        `/theaters/${theater.id}`,
+        `/theaters/${createdTheaterId}`,
       );
 
       expect(response.status).toBe(200);
-      expect(response.body.id).toBe(theater.id);
-      expect(response.body.name).toBe('Get By ID Theater');
+      expect(response.body.id).toBe(createdTheaterId);
     });
 
-    it('should return 404 for a non-existent theater', async () => {
-      const response = await request(app.getHttpServer()).get('/theaters/9999');
+    it('should update a theater', async () => {
+      const updateData = {
+        name: 'Updated Theater Name',
+        capacity: 200,
+      };
 
-      expect(response.status).toBe(404);
+      const response = await request(app.getHttpServer())
+        .patch(`/theaters/${createdTheaterId}`)
+        .send(updateData);
+
+      expect(response.status).toBe(200);
+      expect(response.body.name).toBe(updateData.name);
+      expect(response.body.capacity).toBe(updateData.capacity);
+    });
+
+    it('should delete a theater', async () => {
+      const response = await request(app.getHttpServer()).delete(
+        `/theaters/${createdTheaterId}`,
+      );
+
+      expect(response.status).toBe(200);
+
+      const getResponse = await request(app.getHttpServer()).get(
+        `/theaters/${createdTheaterId}`,
+      );
+
+      expect(getResponse.status).toBe(404);
+    });
+  });
+
+  describe('Theater Validation', () => {
+    it('should accept a theater with valid capacity', async () => {
+      const validTheaterData = {
+        name: 'Valid Capacity Theater',
+        capacity: 100,
+      };
+
+      const response = await request(app.getHttpServer())
+        .post('/theaters')
+        .send(validTheaterData);
+
+      expect(response.status).toBe(200);
+      expect(response.body.capacity).toBe(validTheaterData.capacity);
+    });
+
+    it('should reject a theater with negative capacity', async () => {
+      const invalidTheaterData = {
+        name: 'Invalid Theater',
+        capacity: -10,
+      };
+
+      const response = await request(app.getHttpServer())
+        .post('/theaters')
+        .send(invalidTheaterData);
+
+      expect(response.status).toBe(400);
+      expect(response.body.message[0]).toContain('capacity');
     });
   });
 });

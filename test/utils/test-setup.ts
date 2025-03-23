@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -38,6 +38,16 @@ export async function setupTestApp(): Promise<INestApplication> {
   }).compile();
 
   appInstance = moduleFixture.createNestApplication();
+  appInstance.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+    }),
+  );
   await appInstance.init();
   appInstance.useGlobalFilters(new HttpExceptionFilter());
 
