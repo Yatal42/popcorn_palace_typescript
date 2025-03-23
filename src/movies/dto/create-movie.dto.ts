@@ -31,6 +31,5 @@ export class CreateMovieDto {
 
   @IsInt()
   @Min(1900, { message: 'Release year must be after 1900' })
-  @Max(2100, { message: 'Release year seems too far in the future' })
   releaseYear: number;
 }

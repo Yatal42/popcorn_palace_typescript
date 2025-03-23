@@ -212,7 +212,6 @@ describe('ShowtimesService', () => {
     });
 
     it('should throw BadRequestException when showtime is in the past', async () => {
-      // Mock movie and theater
       moviesService.findOne.mockResolvedValue({
         id: 1,
         title: 'Test Movie',

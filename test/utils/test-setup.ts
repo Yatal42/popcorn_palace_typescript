@@ -10,12 +10,10 @@ import { CreateMovieDto } from '../../src/movies/dto/create-movie.dto';
 import { CreateTheaterDto } from '../../src/theaters/dto/create-theater.dto';
 import { CreateShowtimeDto } from '../../src/showtimes/dto/create-showtime.dto';
 import { CreateBookingDto } from '../../src/bookings/dto/create-booking.dto';
-import { AppLoggerService } from '../../src/common/services/logger.service';
 import { TestLogger } from './test-logger';
 
 let appInstance: INestApplication | null = null;
 
-// Create a logger instance
 const logger = new TestLogger('TestSetup');
 
 export async function setupTestApp(): Promise<INestApplication> {
