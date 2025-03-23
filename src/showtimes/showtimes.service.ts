@@ -17,8 +17,6 @@ import { UpdateShowtimeDto } from './dto/update-showtime.dto';
 import { Showtime } from './entities/showtime.entity';
 import { MoviesService } from '../movies/movies.service';
 import { TheatersService } from '../theaters/theaters.service';
-import { Movie } from '../movies/entities/movie.entity';
-import { Theater } from '../theaters/entities/theater.entity';
 import { AppLoggerService } from '../common/services/logger.service';
 
 @Injectable()

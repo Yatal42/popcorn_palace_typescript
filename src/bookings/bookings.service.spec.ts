@@ -1,6 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { BookingsService } from './bookings.service';
 import { Booking } from './entities/booking.entity';
 import { ShowtimesService } from '../showtimes/showtimes.service';
@@ -25,9 +24,6 @@ describe('BookingsService', () => {
       merge: jest.fn(),
       delete: jest.fn(),
       count: jest.fn(),
-      manager: {
-        transaction: jest.fn(),
-      },
     };
 
     showtimesService = {

@@ -1,6 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { ShowtimesService } from './showtimes.service';
 import { Showtime } from './entities/showtime.entity';
 import { MoviesService } from '../movies/movies.service';
@@ -9,76 +8,14 @@ import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { CreateShowtimeDto } from './dto/create-showtime.dto';
 import { UpdateShowtimeDto } from './dto/update-showtime.dto';
 
-interface MockRepository<T = any> {
-  find?: jest.Mock;
-  findOne?: jest.Mock;
-  create?: jest.Mock;
-  save?: jest.Mock;
-  merge?: jest.Mock;
-  delete?: jest.Mock;
-  createQueryBuilder?: jest.Mock;
-}
-
-const createMockRepository = <T>(): MockRepository<T> => {
-  return {
-    find: jest.fn(),
-    findOne: jest.fn(),
-    create: jest.fn(),
-    save: jest.fn(),
-    merge: jest.fn(),
-    delete: jest.fn(),
-    createQueryBuilder: jest.fn(),
-  };
-};
-
-const setupMocksForOverlapTest = (
-  showtimeRepository: MockRepository<Showtime>,
-  moviesService: { findOne: jest.Mock },
-  theatersService: { findOne: jest.Mock },
-  theaterId: number,
-  hasOverlap = false,
-) => {
-  const movieId = 1;
-  const movie = { id: movieId, title: 'Test Movie' };
-  const theater = { id: theaterId, name: 'Test Theater' };
-  const expectedEndTime = new Date('2023-07-10T20:00:00Z');
-
-  moviesService.findOne.mockResolvedValue(movie);
-  theatersService.findOne.mockResolvedValue(theater);
-
-  if (hasOverlap) {
-    showtimeRepository.findOne.mockResolvedValue({
-      id: 2,
-      movieId: 2,
-      theaterId,
-      startTime: new Date('2023-07-10T19:00:00Z'),
-      endTime: new Date('2023-07-10T21:00:00Z'),
-    });
-  } else {
-    showtimeRepository.findOne.mockResolvedValue(null);
-  }
-
-  showtimeRepository.create.mockReturnValue({
-    movie,
-    movieId,
-    theater,
-    theaterId,
-    startTime: new Date('2023-07-10T18:00:00Z'),
-    endTime: expectedEndTime,
-    price: 15.99,
-  });
-
-  return { movieId, movie, theater, expectedEndTime };
-};
-
 describe('ShowtimesService', () => {
   let service: ShowtimesService;
-  let showtimesRepository: MockRepository<Showtime>;
-  let moviesService: { findOne: jest.Mock };
-  let theatersService: { findOne: jest.Mock };
+  let showtimeRepository: any;
+  let moviesService: any;
+  let theatersService: any;
 
   beforeEach(async () => {
-    showtimesRepository = {
+    showtimeRepository = {
       find: jest.fn(),
       findOne: jest.fn(),
       create: jest.fn(),
@@ -101,7 +38,7 @@ describe('ShowtimesService', () => {
         ShowtimesService,
         {
           provide: getRepositoryToken(Showtime),
-          useValue: showtimesRepository,
+          useValue: showtimeRepository,
         },
         {
           provide: MoviesService,
@@ -144,7 +81,7 @@ describe('ShowtimesService', () => {
       moviesService.findOne.mockResolvedValue(mockMovie);
       theatersService.findOne.mockResolvedValue(mockTheater);
 
-      showtimesRepository.findOne.mockResolvedValue(null);
+      showtimeRepository.findOne.mockResolvedValue(null);
 
       const expectedShowtime = {
         id: 1,
@@ -156,7 +93,7 @@ describe('ShowtimesService', () => {
         endTime: new Date(futureDate.getTime() + 120 * 60 * 1000),
         price: 10.5,
       };
-      showtimesRepository.save.mockResolvedValue(expectedShowtime);
+      showtimeRepository.save.mockResolvedValue(expectedShowtime);
 
       const createShowtimeDto: CreateShowtimeDto = {
         movieId,
@@ -170,8 +107,8 @@ describe('ShowtimesService', () => {
 
       expect(moviesService.findOne).toHaveBeenCalledWith(movieId);
       expect(theatersService.findOne).toHaveBeenCalledWith(theaterId);
-      expect(showtimesRepository.findOne).toHaveBeenCalled();
-      expect(showtimesRepository.save).toHaveBeenCalled();
+      expect(showtimeRepository.findOne).toHaveBeenCalled();
+      expect(showtimeRepository.save).toHaveBeenCalled();
       expect(result).toEqual(expectedShowtime);
     });
 
@@ -204,7 +141,7 @@ describe('ShowtimesService', () => {
         startTime: new Date(futureDate.getTime() - 30 * 60 * 1000), // 30 minutes before
         endTime: new Date(futureDate.getTime() + 90 * 60 * 1000), // 90 minutes after
       };
-      showtimesRepository.findOne.mockResolvedValue(overlappingShowtime);
+      showtimeRepository.findOne.mockResolvedValue(overlappingShowtime);
 
       const createShowtimeDto: CreateShowtimeDto = {
         movieId,
@@ -220,8 +157,8 @@ describe('ShowtimesService', () => {
 
       expect(moviesService.findOne).toHaveBeenCalledWith(movieId);
       expect(theatersService.findOne).toHaveBeenCalledWith(theaterId);
-      expect(showtimesRepository.findOne).toHaveBeenCalled();
-      expect(showtimesRepository.save).not.toHaveBeenCalled();
+      expect(showtimeRepository.findOne).toHaveBeenCalled();
+      expect(showtimeRepository.save).not.toHaveBeenCalled();
     });
 
     it('should throw NotFoundException when movie does not exist', async () => {
@@ -243,7 +180,7 @@ describe('ShowtimesService', () => {
 
       expect(moviesService.findOne).toHaveBeenCalledWith(999);
       expect(theatersService.findOne).not.toHaveBeenCalled();
-      expect(showtimesRepository.save).not.toHaveBeenCalled();
+      expect(showtimeRepository.save).not.toHaveBeenCalled();
     });
 
     it('should throw NotFoundException when theater does not exist', async () => {
@@ -271,7 +208,7 @@ describe('ShowtimesService', () => {
 
       expect(moviesService.findOne).toHaveBeenCalledWith(1);
       expect(theatersService.findOne).toHaveBeenCalledWith(999);
-      expect(showtimesRepository.save).not.toHaveBeenCalled();
+      expect(showtimeRepository.save).not.toHaveBeenCalled();
     });
 
     it('should throw BadRequestException when showtime is in the past', async () => {
@@ -304,7 +241,7 @@ describe('ShowtimesService', () => {
 
       expect(moviesService.findOne).toHaveBeenCalledWith(1);
       expect(theatersService.findOne).toHaveBeenCalledWith(1);
-      expect(showtimesRepository.save).not.toHaveBeenCalled();
+      expect(showtimeRepository.save).not.toHaveBeenCalled();
     });
   });
 
@@ -321,7 +258,7 @@ describe('ShowtimesService', () => {
         },
       ];
 
-      showtimesRepository.find.mockResolvedValue(showtimes);
+      showtimeRepository.find.mockResolvedValue(showtimes);
 
       const result = await service.findAll();
 
@@ -341,7 +278,7 @@ describe('ShowtimesService', () => {
         price: 15.99,
       };
 
-      showtimesRepository.findOne.mockResolvedValue(showtime);
+      showtimeRepository.findOne.mockResolvedValue(showtime);
 
       const result = await service.findOne(showtimeId);
 
@@ -351,7 +288,7 @@ describe('ShowtimesService', () => {
     it('should throw NotFoundException if showtime does not exist', async () => {
       const showtimeId = 999;
 
-      showtimesRepository.findOne.mockResolvedValue(null);
+      showtimeRepository.findOne.mockResolvedValue(null);
 
       await expect(service.findOne(showtimeId)).rejects.toThrow(
         new NotFoundException(`Showtime with ID "${showtimeId}" not found`),
@@ -375,18 +312,18 @@ describe('ShowtimesService', () => {
         price: 19.99,
       };
 
-      showtimesRepository.findOne.mockResolvedValue(showtime);
-      showtimesRepository.merge.mockImplementation((target, source) => {
+      showtimeRepository.findOne.mockResolvedValue(showtime);
+      showtimeRepository.merge.mockImplementation((target, source) => {
         Object.assign(target, source);
         return target;
       });
-      showtimesRepository.save.mockImplementation((entity) =>
+      showtimeRepository.save.mockImplementation((entity) =>
         Promise.resolve(entity),
       );
 
       const result = await service.update(showtimeId, updateShowtimeDto);
 
-      expect(showtimesRepository.findOne).toHaveBeenCalledWith({
+      expect(showtimeRepository.findOne).toHaveBeenCalledWith({
         where: { id: showtimeId },
         relations: ['movie', 'theater', 'bookings'],
       });
@@ -399,11 +336,11 @@ describe('ShowtimesService', () => {
       const showtimeId = 1;
       const deleteResult = { affected: 1 };
 
-      showtimesRepository.delete.mockResolvedValue(deleteResult);
+      showtimeRepository.delete.mockResolvedValue(deleteResult);
 
       const result = await service.remove(showtimeId);
 
-      expect(showtimesRepository.delete).toHaveBeenCalledWith(showtimeId);
+      expect(showtimeRepository.delete).toHaveBeenCalledWith(showtimeId);
       expect(result).toEqual({ message: 'Showtime deleted successfully' });
     });
 
@@ -411,7 +348,7 @@ describe('ShowtimesService', () => {
       const showtimeId = 1;
       const error = { code: '23503' };
 
-      showtimesRepository.delete.mockRejectedValue(error);
+      showtimeRepository.delete.mockRejectedValue(error);
 
       await expect(service.remove(showtimeId)).rejects.toThrow(
         new BadRequestException(
@@ -424,7 +361,7 @@ describe('ShowtimesService', () => {
       const showtimeId = 999;
       const deleteResult = { affected: 0 };
 
-      showtimesRepository.delete.mockResolvedValue(deleteResult);
+      showtimeRepository.delete.mockResolvedValue(deleteResult);
 
       await expect(service.remove(showtimeId)).rejects.toThrow(
         new NotFoundException(`Showtime with ID ${showtimeId} not found`),

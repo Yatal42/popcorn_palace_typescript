@@ -7,12 +7,11 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindManyOptions, QueryFailedError } from 'typeorm';
+import { Repository, FindManyOptions } from 'typeorm';
 import { Booking } from './entities/booking.entity';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { ShowtimesService } from '../showtimes/showtimes.service';
-import { Showtime } from '../showtimes/entities/showtime.entity';
 import { AppLoggerService } from '../common/services/logger.service';
 
 @Injectable()
