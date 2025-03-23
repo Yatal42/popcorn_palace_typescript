@@ -10,7 +10,7 @@ This document provides instructions for setting up and using the Popcorn Palace 
    npm install
    
    # Start the database
-   docker-compose up -d
+   docker compose up -d
    
    # Start the application in development mode
    npm run start:dev
@@ -26,15 +26,12 @@ The API will be available at `http://localhost:3000`.
 
 ## Prerequisites
 
-- **Node.js**: v14 or higher (v16 recommended)
-- **npm**: v7 or higher
-- **Docker**: v20.10 or higher
-  - Docker Compose v2.x
+- **Node.js**: A recent version of Node.js
+- **npm**: Compatible with your Node.js version
+- **Docker**: Docker with Docker Compose support
   - 2GB+ available memory for containers
 - **Operating System**:
-  - macOS 10.15+
-  - Windows 10+ with WSL2
-  - Linux (Ubuntu 20.04+ or similar)
+  - macOS, Windows with WSL2, or Linux
 - **Development**:
   - Git
   - Terminal application
@@ -204,8 +201,7 @@ POST /bookings
 {
   "userId": "user-123",
   "seatNumber": 15,
-  "showtimeId": 123,
-  "idempotencyKey": "2e8f7f18-98ca-4e87-8076-94bcd60464c5"
+  "showtimeId": 123
 }
 ```
 
@@ -215,7 +211,7 @@ POST /bookings
 |-------------|---------|--------------|----------|
 | 400 | Bad Request | Invalid input data, business rule violation | Check request data against API documentation |
 | 404 | Not Found | Resource doesn't exist | Verify IDs are correct |
-| 409 | Conflict | Resource conflict (e.g., duplicate booking) | Use idempotency key for bookings |
+| 409 | Conflict | Resource conflict (e.g., duplicate booking) | Ensure seat is not already booked for that showtime |
 | 500 | Server Error | Database error, internal error | Check logs for details |
 
 ## Troubleshooting
@@ -225,7 +221,7 @@ POST /bookings
 - Ensure database credentials match `.env` file
 
 ### Test Failures
-- Clear test database: `docker-compose down -v && docker-compose up -d`
+- Clear test database: `docker compose down -v && docker compose up -d`
 - Rebuild application: `npm run build`
 
 ### Logging Issues
