@@ -1,56 +1,64 @@
 import { Client } from 'pg';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
-
-const envFile = process.env.NODE_ENV === 'test' ? '.env.test' : '.env';
-const envPath = path.resolve(process.cwd(), envFile);
-dotenv.config({ path: envPath });
-
-console.log(`Using environment file: ${envPath}`);
-console.log(
-  `Database connection details: ${process.env.DATABASE_HOST}:${process.env.DATABASE_PORT}`,
-);
+import { TestLogger } from './utils/test-logger';
 
 export async function createTestDatabase(): Promise<boolean> {
-  try {
-    const client = new Client({
-      host: process.env.DATABASE_HOST || 'localhost',
-      port: parseInt(process.env.DATABASE_PORT || '5432'),
-      user: process.env.DATABASE_USER || 'postgres',
-      password: process.env.DATABASE_PASSWORD || 'postgres',
-      database: 'postgres',
-    });
+  const envPath = path.resolve(process.cwd(), '.env.test');
+  dotenv.config({ path: envPath });
+  const logger = new TestLogger('TestDbCreator');
+  logger.log(`Using environment file: ${envPath}`);
 
+  const config = {
+    host: process.env.DATABASE_HOST || 'localhost',
+    port: parseInt(process.env.DATABASE_PORT || '5432'),
+    user: process.env.DATABASE_USER || 'postgres',
+    password: process.env.DATABASE_PASSWORD || 'postgres',
+    database: 'postgres',
+  };
+
+  const testDbName = process.env.DATABASE_NAME || 'popcorn_palace_test';
+  const client = new Client(config);
+
+  try {
     await client.connect();
-    const checkResult = await client.query(
-      "SELECT 1 FROM pg_database WHERE datname = 'popcorn_palace_test'",
+
+    const dbCheckRes = await client.query(
+      `SELECT 1 FROM pg_database WHERE datname = $1`,
+      [testDbName],
     );
 
-    if (checkResult.rowCount === 0) {
-      console.log('Creating test database: popcorn_palace_test');
-      await client.query('CREATE DATABASE popcorn_palace_test');
-      console.log('Test database created successfully');
+    if (dbCheckRes.rows.length === 0) {
+      logger.log(`Creating test database: ${testDbName}`);
+      await client.query(`CREATE DATABASE ${testDbName}`);
+      logger.log('Test database created successfully');
     } else {
-      console.log('Test database already exists');
+      logger.log('Test database already exists');
     }
-    await client.end();
     return true;
-  } catch (error) {
-    console.error(
-      'Error setting up test database:',
-      error instanceof Error ? error.message : String(error),
+  } catch (err) {
+    logger.error(
+      'Error creating test database. Make sure the PostgreSQL server is running.',
+      err,
     );
     return false;
+  } finally {
+    try {
+      await client.end();
+    } catch (err) {
+      logger.error(err);
+    }
   }
 }
 
 if (require.main === module) {
+  const logger = new TestLogger('TestDbCreator');
   createTestDatabase()
-    .then((result) => {
-      process.exit(result ? 0 : 1);
+    .then((success) => {
+      process.exit(success ? 0 : 1);
     })
     .catch((err) => {
-      console.error(err);
+      logger.error('Unexpected error:', err);
       process.exit(1);
     });
 }

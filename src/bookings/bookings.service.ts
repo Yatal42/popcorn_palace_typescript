@@ -64,7 +64,16 @@ export class BookingsService {
       booking.seatNumber = createBookingDto.seatNumber;
       booking.userId = createBookingDto.userId;
 
-      return await this.bookingsRepository.save(booking);
+      const result = await this.bookingsRepository.save(booking);
+
+      let logMessage = `Booking created successfully: Seat ${result.seatNumber} at ${showtime.startTime.toISOString()} by User ${result.userId} (ID: ${result.id})`;
+
+      if (showtime.movie?.title) {
+        logMessage = `Booking created successfully: Seat ${result.seatNumber} for Movie "${showtime.movie.title}" at ${showtime.startTime.toISOString()} by User ${result.userId} (ID: ${result.id})`;
+      }
+
+      this.logger.log(logMessage);
+      return result;
     } catch (error) {
       if (
         error.code === '23505' &&
@@ -145,8 +154,14 @@ export class BookingsService {
   async update(id: string, updateBookingDto: UpdateBookingDto) {
     try {
       const booking = await this.findOne(id);
+
       Object.assign(booking, updateBookingDto);
-      return this.bookingsRepository.save(booking);
+      const result = await this.bookingsRepository.save(booking);
+
+      this.logger.log(
+        `Booking updated successfully: ID ${result.id}, User ${result.userId}, Seat ${result.seatNumber}`,
+      );
+      return result;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -166,6 +181,7 @@ export class BookingsService {
         throw new NotFoundException(`Booking with ID "${id}" not found`);
       }
 
+      this.logger.log(`Booking deleted successfully: ID ${id}`);
       return { message: 'Booking deleted successfully' };
     } catch (error) {
       if (error instanceof HttpException) {

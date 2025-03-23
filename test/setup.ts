@@ -7,11 +7,14 @@ import { Booking } from '../src/bookings/entities/booking.entity';
 import { createTestDatabase } from './create-test-db';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import { TestLogger } from './utils/test-logger';
 
 process.env.NODE_ENV = 'test';
 const envPath = path.resolve(process.cwd(), '.env.test');
 dotenv.config({ path: envPath });
-console.log(`Setup using environment file: ${envPath}`);
+
+const logger = new TestLogger('TestSetup');
+logger.log(`Setup using environment file: ${envPath}`);
 
 process.env.DATABASE_NAME = 'popcorn_palace_test';
 
@@ -29,13 +32,10 @@ const testDataSource = new DataSource({
 
 const initializeDatabase = async () => {
   try {
-    if (!testDataSource.isInitialized) {
-      await testDataSource.initialize();
-      console.log('Database initialized and schema synchronized');
-    }
+    await testDataSource.initialize();
+    logger.log('Database initialized and schema synchronized');
   } catch (error) {
-    console.error('Error initializing database:', error);
-    throw error;
+    logger.error('Error initializing database:', error);
   }
 };
 
@@ -49,69 +49,60 @@ const waitForDatabase = async (retries = 5, delay = 2000) => {
         port: parseInt(process.env.DATABASE_PORT || '5432'),
         user: process.env.DATABASE_USER || 'postgres',
         password: process.env.DATABASE_PASSWORD || 'postgres',
-        database: process.env.DATABASE_NAME || 'popcorn_palace_test',
+        database: 'postgres',
       });
 
       await client.connect();
-      console.log('Successfully connected to database');
       await client.end();
+      logger.log('Successfully connected to database');
 
       await initializeDatabase();
-      return;
+      return true;
     } catch (error) {
-      console.error('Error connecting to database:', error.message);
       if (i === retries - 1) {
-        throw error;
+        logger.error('Error connecting to database:', error.message);
+        return false;
       }
-      console.log(`Retrying in ${delay / 1000} seconds...`);
+      logger.warn(`Retrying in ${delay / 1000} seconds...`);
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
+  return false;
 };
 
 const safeTruncate = async (client, tableName) => {
   try {
-    const tableExists = await client.query(
-      `SELECT EXISTS (
-         SELECT FROM information_schema.tables 
-         WHERE table_schema = 'public' 
-         AND table_name = $1
-       )`,
-      [tableName],
-    );
-
-    if (tableExists.rows[0].exists) {
-      await client.query(`TRUNCATE TABLE ${tableName} CASCADE`);
-      console.log(`Truncated table: ${tableName}`);
-    } else {
-      console.log(`Table ${tableName} doesn't exist yet, skipping truncate`);
-    }
+    await client.query(`TRUNCATE TABLE "${tableName}" CASCADE`);
+    logger.log(`Truncated table: ${tableName}`);
   } catch (error) {
-    console.error(`Error with table ${tableName}:`, error.message);
+    if (error.code === '42P01') {
+      logger.log(`Table ${tableName} doesn't exist yet, skipping truncate`);
+    } else {
+      logger.error(`Error with table ${tableName}:`, error.message);
+    }
   }
 };
 
 const clearTables = async () => {
+  const client = new Client({
+    host: process.env.DATABASE_HOST || 'localhost',
+    port: parseInt(process.env.DATABASE_PORT || '5432'),
+    user: process.env.DATABASE_USER || 'postgres',
+    password: process.env.DATABASE_PASSWORD || 'postgres',
+    database: process.env.DATABASE_NAME || 'popcorn_palace_test',
+  });
+
   try {
-    const client = new Client({
-      host: process.env.DATABASE_HOST || 'localhost',
-      port: parseInt(process.env.DATABASE_PORT || '5432'),
-      user: process.env.DATABASE_USER || 'postgres',
-      password: process.env.DATABASE_PASSWORD || 'postgres',
-      database: process.env.DATABASE_NAME || 'popcorn_palace_test',
-    });
-
     await client.connect();
-
     await safeTruncate(client, 'booking');
     await safeTruncate(client, 'showtime');
     await safeTruncate(client, 'theater');
     await safeTruncate(client, 'movie');
-
-    console.log('Tables cleared for clean test run');
-    await client.end();
+    logger.log('Tables cleared for clean test run');
   } catch (error) {
-    console.error('Error clearing tables:', error.message);
+    logger.error('Error clearing tables:', error.message);
+  } finally {
+    await client.end();
   }
 };
 
@@ -124,7 +115,7 @@ afterAll(async () => {
 
   if (testDataSource.isInitialized) {
     await testDataSource.destroy();
-    console.log('Test database connection closed');
+    logger.log('Test database connection closed');
   }
 });
 

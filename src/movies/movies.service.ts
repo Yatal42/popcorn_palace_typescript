@@ -21,10 +21,14 @@ export class MoviesService {
     private moviesRepository: Repository<Movie>,
   ) {}
 
-  create(createMovieDto: CreateMovieDto) {
+  async create(createMovieDto: CreateMovieDto) {
     try {
       const movie = this.moviesRepository.create(createMovieDto);
-      return this.moviesRepository.save(movie);
+      const result = await this.moviesRepository.save(movie);
+      this.logger.log(
+        `Movie created successfully: ${result.title} (ID: ${result.id})`,
+      );
+      return result;
     } catch (error) {
       this.logger.logDatabaseError(error, 'create', 'Movie');
       throw new InternalServerErrorException(
@@ -84,7 +88,11 @@ export class MoviesService {
     try {
       const movie = await this.findOne(id);
       this.moviesRepository.merge(movie, updateMovieDto);
-      return this.moviesRepository.save(movie);
+      const result = await this.moviesRepository.save(movie);
+      this.logger.log(
+        `Movie updated successfully: ${result.title} (ID: ${result.id})`,
+      );
+      return result;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -104,6 +112,7 @@ export class MoviesService {
         throw new NotFoundException(`Movie with ID ${id} not found`);
       }
 
+      this.logger.log(`Movie deleted successfully: ID ${id}`);
       return { message: 'Movie deleted successfully' };
     } catch (error) {
       if (error.code === '23503') {
@@ -136,7 +145,11 @@ export class MoviesService {
       }
 
       Object.assign(movie, updateMovieDto);
-      return this.moviesRepository.save(movie);
+      const result = await this.moviesRepository.save(movie);
+      this.logger.log(
+        `Movie updated successfully by title: ${result.title} (ID: ${result.id})`,
+      );
+      return result;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -160,7 +173,9 @@ export class MoviesService {
         );
       }
 
-      return this.moviesRepository.remove(movie);
+      const result = await this.moviesRepository.remove(movie);
+      this.logger.log(`Movie deleted successfully by title: ${movieTitle}`);
+      return result;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;

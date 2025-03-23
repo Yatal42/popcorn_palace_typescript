@@ -1,9 +1,11 @@
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { setupTestApp } from '../utils/test-setup';
+import { TestLogger } from '../utils/test-logger';
 
 describe('Movies API (e2e)', () => {
   let app: INestApplication;
+  const logger = new TestLogger('MoviesE2E');
 
   beforeAll(async () => {
     app = await setupTestApp();
@@ -77,7 +79,9 @@ describe('Movies API (e2e)', () => {
         .patch(`/movies/${createdMovieId}`)
         .send(updateData);
 
-      console.log('Update response:', response.status, response.body);
+      logger.log(
+        `Update response: ${response.status} ${JSON.stringify(response.body)}`,
+      );
 
       expect(response.status).toBe(200);
       expect(response.body.title).toBe(updateData.title);
