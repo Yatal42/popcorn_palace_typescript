@@ -33,7 +33,7 @@ export class MoviesService {
     }
   }
 
-  findAll(title?: string) {
+  async findAll(title?: string) {
     try {
       const findOptions: FindManyOptions<Movie> = {};
 
@@ -43,8 +43,18 @@ export class MoviesService {
         };
       }
 
-      return this.moviesRepository.find(findOptions);
+      const movies = await this.moviesRepository.find(findOptions);
+
+      if (title && movies.length === 0) {
+        throw new NotFoundException(`No movies found matching title: ${title}`);
+      }
+
+      return movies;
     } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
       this.logger.logDatabaseError(error, 'findAll', 'Movie');
       throw new InternalServerErrorException(
         'Failed to fetch movies. Please try again later.',

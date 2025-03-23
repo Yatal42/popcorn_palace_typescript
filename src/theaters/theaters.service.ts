@@ -32,7 +32,7 @@ export class TheatersService {
     }
   }
 
-  findAll(name?: string) {
+  async findAll(name?: string) {
     try {
       const findOptions: FindManyOptions<Theater> = {};
 
@@ -42,8 +42,18 @@ export class TheatersService {
         };
       }
 
-      return this.theatersRepository.find(findOptions);
+      const theaters = await this.theatersRepository.find(findOptions);
+
+      if (name && theaters.length === 0) {
+        throw new NotFoundException(`No theaters found matching name: ${name}`);
+      }
+
+      return theaters;
     } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
       this.logger.logDatabaseError(error, 'findAll', 'Theater');
       throw new InternalServerErrorException(
         'Failed to fetch theaters. Please try again later.',

@@ -93,14 +93,19 @@ export class ShowtimesService {
     }
   }
 
-  findAll() {
+  async findAll() {
     try {
       const findOptions: FindManyOptions<Showtime> = {
         relations: ['movie', 'theater', 'bookings'],
       };
 
-      return this.showtimesRepository.find(findOptions);
+      const showtimes = await this.showtimesRepository.find(findOptions);
+      return showtimes;
     } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
       this.logger.logDatabaseError(error, 'findAll', 'Showtime');
       throw new InternalServerErrorException(
         'Failed to fetch showtimes. Please try again later.',
