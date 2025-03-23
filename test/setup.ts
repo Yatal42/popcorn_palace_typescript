@@ -5,8 +5,14 @@ import { Theater } from '../src/theaters/entities/theater.entity';
 import { Showtime } from '../src/showtimes/entities/showtime.entity';
 import { Booking } from '../src/bookings/entities/booking.entity';
 import { createTestDatabase } from './create-test-db';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
 
 process.env.NODE_ENV = 'test';
+const envPath = path.resolve(process.cwd(), '.env.test');
+dotenv.config({ path: envPath });
+console.log(`Setup using environment file: ${envPath}`);
+
 process.env.DATABASE_NAME = 'popcorn_palace_test';
 
 const testDataSource = new DataSource({

@@ -26,6 +26,33 @@
 
 > **IMPORTANT**: For detailed setup and usage instructions, please see [Instructions.md](Instructions.md)
 
+## Environment Setup
+
+For the application to work correctly, you must create environment files:
+
+1. **Create `.env` file in the project root** for development:
+```
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_USER=postgres
+DATABASE_PASSWORD=postgres
+DATABASE_NAME=popcorn_palace
+NODE_ENV=development
+PORT=3000
+```
+
+2. **Create `.env.test` file in the project root** for testing:
+```
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_USER=postgres
+DATABASE_PASSWORD=postgres
+DATABASE_NAME=popcorn_palace_test
+NODE_ENV=test
+```
+
+**Note**: Without these environment files, the application will use default values which might not work in your environment. The files must be in the root directory of the project.
+
 ## Overview
 The Popcorn Palace Movie Ticket Booking System is a backend service designed to handle various operations related to movie,showtime, and booking management.
 
