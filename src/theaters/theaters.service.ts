@@ -27,7 +27,7 @@ export class TheatersService {
     } catch (error) {
       this.logger.logDatabaseError(error, 'create', 'Theater');
       throw new InternalServerErrorException(
-        `Error occurred while creating theater: ${error.message}`,
+        'Failed to create theater. Please try again later.',
       );
     }
   }
@@ -46,7 +46,7 @@ export class TheatersService {
     } catch (error) {
       this.logger.logDatabaseError(error, 'findAll', 'Theater');
       throw new InternalServerErrorException(
-        `Error occurred while fetching theaters: ${error.message}`,
+        'Failed to fetch theaters. Please try again later.',
       );
     }
   }
@@ -64,7 +64,7 @@ export class TheatersService {
       }
       this.logger.logDatabaseError(error, 'findOne', 'Theater');
       throw new InternalServerErrorException(
-        `Error occurred while fetching theater: ${error.message}`,
+        'Failed to fetch theater. Please try again later.',
       );
     }
   }
@@ -80,7 +80,7 @@ export class TheatersService {
       }
       this.logger.logDatabaseError(error, 'update', 'Theater');
       throw new InternalServerErrorException(
-        `Error occurred while updating theater: ${error.message}`,
+        'Failed to update theater. Please try again later.',
       );
     }
   }
@@ -106,7 +106,7 @@ export class TheatersService {
 
       this.logger.logDatabaseError(error, 'remove', 'Theater');
       throw new InternalServerErrorException(
-        'Error occurred while deleting theater',
+        'Failed to delete theater. Please try again later.',
       );
     }
   }

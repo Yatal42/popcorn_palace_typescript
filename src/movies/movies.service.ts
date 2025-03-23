@@ -27,7 +27,7 @@ export class MoviesService {
     } catch (error) {
       this.logger.logDatabaseError(error, 'create', 'Movie');
       throw new InternalServerErrorException(
-        `Error occurred while creating movie: ${error.message}`,
+        'Failed to create movie. Please try again later.',
       );
     }
   }
@@ -46,7 +46,7 @@ export class MoviesService {
     } catch (error) {
       this.logger.logDatabaseError(error, 'findAll', 'Movie');
       throw new InternalServerErrorException(
-        `Error occurred while fetching movies: ${error.message}`,
+        'Failed to fetch movies. Please try again later.',
       );
     }
   }
@@ -64,7 +64,7 @@ export class MoviesService {
       }
       this.logger.logDatabaseError(error, 'findOne', 'Movie');
       throw new InternalServerErrorException(
-        `Error occurred while fetching movie: ${error.message}`,
+        'Failed to fetch movie. Please try again later.',
       );
     }
   }
@@ -80,7 +80,7 @@ export class MoviesService {
       }
       this.logger.logDatabaseError(error, 'update', 'Movie');
       throw new InternalServerErrorException(
-        `Error occurred while updating movie: ${error.message}`,
+        'Failed to update movie. Please try again later.',
       );
     }
   }
@@ -107,7 +107,7 @@ export class MoviesService {
 
       this.logger.logDatabaseError(error, 'remove', 'Movie');
       throw new InternalServerErrorException(
-        'Error occurred while deleting movie',
+        'Failed to remove movie. Please try again later.',
       );
     }
   }
@@ -132,7 +132,7 @@ export class MoviesService {
       }
       this.logger.logDatabaseError(error, 'updateByTitle', 'Movie');
       throw new InternalServerErrorException(
-        `Error occurred while updating movie by title: ${error.message}`,
+        'Failed to update movie. Please try again later.',
       );
     }
   }
@@ -156,7 +156,7 @@ export class MoviesService {
       }
       this.logger.logDatabaseError(error, 'removeByTitle', 'Movie');
       throw new InternalServerErrorException(
-        `Error occurred while removing movie by title: ${error.message}`,
+        'Failed to remove movie. Please try again later.',
       );
     }
   }

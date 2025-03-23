@@ -100,7 +100,7 @@ export class BookingsService {
       this.logger.logDatabaseError(error, 'create', 'Booking');
 
       throw new InternalServerErrorException(
-        `Error occurred while processing booking: ${error.message}`,
+        'Failed to process booking. Please try again later.',
       );
     }
   }
@@ -119,7 +119,7 @@ export class BookingsService {
     } catch (error) {
       this.logger.logDatabaseError(error, 'findAll', 'Booking');
       throw new InternalServerErrorException(
-        `Error occurred while fetching bookings: ${error.message}`,
+        'Failed to fetch bookings. Please try again later.',
       );
     }
   }
@@ -142,7 +142,7 @@ export class BookingsService {
       }
       this.logger.logDatabaseError(error, 'findOne', 'Booking');
       throw new InternalServerErrorException(
-        `Error occurred while fetching booking: ${error.message}`,
+        'Failed to fetch booking. Please try again later.',
       );
     }
   }
@@ -158,7 +158,7 @@ export class BookingsService {
       }
       this.logger.logDatabaseError(error, 'update', 'Booking');
       throw new InternalServerErrorException(
-        `Error occurred while updating booking: ${error.message}`,
+        'Failed to update booking. Please try again later.',
       );
     }
   }
@@ -180,7 +180,7 @@ export class BookingsService {
       this.logger.logDatabaseError(error, 'remove', 'Booking');
 
       throw new InternalServerErrorException(
-        'Error occurred while deleting booking',
+        'Failed to delete booking. Please try again later.',
       );
     }
   }
