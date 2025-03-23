@@ -5,34 +5,11 @@ import {
 } from '@nestjs/common';
 
 @Injectable()
-export class AppLoggerService implements NestLoggerService {
-  private readonly logger: Logger;
-
+export class AppLoggerService extends Logger implements NestLoggerService {
   constructor(context?: string) {
-    this.logger = new Logger(context || AppLoggerService.name);
+    super(context || AppLoggerService.name);
   }
 
-  log(message: string, context?: string): void {
-    this.logger.log(message, context);
-  }
-
-  error(message: string, trace?: string, context?: string): void {
-    this.logger.error(message, trace, context);
-  }
-
-  warn(message: string, context?: string): void {
-    this.logger.warn(message, context);
-  }
-
-  debug(message: string, context?: string): void {
-    this.logger.debug(message, context);
-  }
-
-  verbose(message: string, context?: string): void {
-    this.logger.verbose(message, context);
-  }
-
-  // Helper method for logging database errors
   logDatabaseError(error: any, operation: string, entity: string): void {
     const errorMessage = `Database error during ${operation} operation on ${entity}`;
 
