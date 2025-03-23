@@ -6,14 +6,7 @@ import {
   setupCommonTestData,
   cleanupTest,
 } from '../utils/test-setup';
-
-function generateUUID() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-    const r = (Math.random() * 16) | 0,
-      v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
-}
+import { v4 as generateUUID } from 'uuid';
 
 describe('Bookings API (e2e)', () => {
   let app: INestApplication;
@@ -116,7 +109,7 @@ describe('Bookings API (e2e)', () => {
 
   describe('Booking Validation', () => {
     beforeEach(async () => {
-      await cleanupTest(app);
+      await cleanupTest();
       commonData = await setupCommonTestData(app);
     });
 

@@ -18,6 +18,7 @@ describe('Showtimes API (e2e)', () => {
 
   afterAll(async () => {
     await app.close();
+    await cleanupTest();
   });
 
   describe('Basic Showtime Operations', () => {
@@ -117,7 +118,7 @@ describe('Showtimes API (e2e)', () => {
 
   describe('Showtime Validation', () => {
     beforeEach(async () => {
-      await cleanupTest(app);
+      await cleanupTest();
       await setupCommonTestData(app);
     });
 

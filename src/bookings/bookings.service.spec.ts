@@ -11,10 +11,14 @@ import {
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { Repository } from 'typeorm';
 
+type MockType<T> = {
+  [P in keyof T]?: jest.Mock<any, any>;
+};
+
 describe('BookingsService', () => {
   let service: BookingsService;
-  let bookingRepository: Repository<Booking>;
-  let showtimesService: ShowtimesService;
+  let bookingRepository: MockType<Repository<Booking>>;
+  let showtimesService: MockType<ShowtimesService>;
 
   beforeEach(async () => {
     bookingRepository = {

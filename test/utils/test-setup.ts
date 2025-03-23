@@ -1,11 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { waitForDatabase, clearTables, testDataSource } from '../setup';
 import { HttpExceptionFilter } from '../../src/common/filters/http-exception.filter';
+import { v4 as generateUUID } from 'uuid';
 
 let appInstance: INestApplication | null = null;
 
@@ -103,15 +104,6 @@ export async function createTestShowtime(
   return response.body;
 }
 
-// Function to generate a simple UUID-like string
-function generateUUID() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-    const r = (Math.random() * 16) | 0,
-      v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
-}
-
 export async function createTestBooking(
   app: INestApplication,
   showtimeId: number,
@@ -198,9 +190,6 @@ export function setupRelatedTests(description, setupFn, testFns) {
   });
 }
 
-export async function cleanupTest(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _app: INestApplication,
-) {
+export async function cleanupTest() {
   await clearTables();
 }
