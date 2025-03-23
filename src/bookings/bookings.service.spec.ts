@@ -9,11 +9,12 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { Repository } from 'typeorm';
 
 describe('BookingsService', () => {
   let service: BookingsService;
-  let bookingRepository: any;
-  let showtimesService: any;
+  let bookingRepository: Repository<Booking>;
+  let showtimesService: ShowtimesService;
 
   beforeEach(async () => {
     bookingRepository = {
