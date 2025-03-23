@@ -146,6 +146,16 @@ POST /movies
 }
 ```
 
+**Example request (Update movie):**
+```json
+PATCH /movies/1
+{
+  "durationInMinutes": 150
+}
+```
+
+> **Note**: For update operations, all fields are optional. The API uses `UpdateMovieDto` which extends `PartialType(CreateMovieDto)`, allowing you to update only the fields you want to change while keeping existing values for fields not included in the request.
+
 ### Theaters API
 
 | Endpoint | Method | Description | Query Params |
@@ -164,6 +174,16 @@ POST /theaters
   "capacity": 200
 }
 ```
+
+**Example request (Update theater):**
+```json
+PATCH /theaters/1
+{
+  "capacity": 250
+}
+```
+
+> **Note**: For update operations, all fields are optional, allowing you to update only the fields you want to change while keeping existing values for fields not included in the request.
 
 ### Showtimes API
 
@@ -185,6 +205,16 @@ POST /showtimes
   "theaterId": 456
 }
 ```
+
+**Example request (Update showtime):**
+```json
+PATCH /showtimes/1
+{
+  "price": 14.99
+}
+```
+
+> **Note**: For update operations, all fields are optional, allowing you to update only the fields you want to change while keeping existing values for fields not included in the request.
 
 ### Bookings API
 

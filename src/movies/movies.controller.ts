@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { MoviesService } from './movies.service';
 import { CreateMovieDto } from './dto/create-movie.dto';
+import { UpdateMovieDto } from './dto/update-movie.dto';
 
 @Controller('movies')
 export class MoviesController {
@@ -41,7 +42,7 @@ export class MoviesController {
   @HttpCode(200)
   update(
     @Param('movieTitle') movieTitle: string,
-    @Body() updateMovieDto: CreateMovieDto,
+    @Body() updateMovieDto: UpdateMovieDto,
   ) {
     return this.moviesService.updateByTitle(movieTitle, updateMovieDto);
   }
@@ -50,7 +51,7 @@ export class MoviesController {
   @HttpCode(200)
   patchUpdate(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateMovieDto: CreateMovieDto,
+    @Body() updateMovieDto: UpdateMovieDto,
   ) {
     return this.moviesService.update(id, updateMovieDto);
   }
