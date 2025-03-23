@@ -1,6 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { setupTestApp, createTestTheater } from '../utils/test-setup';
+import { setupTestApp } from '../utils/test-setup';
 
 describe('Theaters API (e2e)', () => {
   let app: INestApplication;
