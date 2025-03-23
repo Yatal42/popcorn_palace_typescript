@@ -28,9 +28,6 @@ export class Booking {
   @Column()
   userId: string;
 
-  @Column({ nullable: true, unique: true })
-  idempotencyKey?: string;
-
   @CreateDateColumn({ name: 'booking_time' })
   bookingTime: Date;
 }

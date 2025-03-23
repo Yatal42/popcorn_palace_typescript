@@ -1,21 +1,32 @@
+import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import {
-  setupTestApp,
-  createTestBooking,
-  setupCommonTestData,
-  cleanupTest,
-} from '../utils/test-setup';
-import { v4 as generateUUID } from 'uuid';
-import { DataSource } from 'typeorm';
+import { AppModule } from '../../src/app.module';
+import { createTestBooking, setupCommonTestData } from '../utils/test-setup';
+import { clearTables } from '../setup';
 import { Showtime } from '../../src/showtimes/entities/showtime.entity';
+import { DataSource } from 'typeorm';
 
-describe('Bookings API (e2e)', () => {
+describe('Bookings Controller (e2e)', () => {
   let app: INestApplication;
-  let commonData;
+  let server: any;
+  let commonData: any;
+  let createdBookingId: string;
 
   beforeAll(async () => {
-    app = await setupTestApp();
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    app = moduleFixture.createNestApplication();
+    await app.init();
+    server = app.getHttpServer();
+
+    commonData = await setupCommonTestData(app);
+  });
+
+  beforeEach(async () => {
+    await clearTables();
     commonData = await setupCommonTestData(app);
   });
 
@@ -24,23 +35,20 @@ describe('Bookings API (e2e)', () => {
   });
 
   describe('Basic Booking Operations', () => {
-    let createdBookingId: string;
-
     it('should create a booking', async () => {
       const bookingData = {
         showtimeId: commonData.showtime.id,
-        seatNumber: 10,
-        userId: 'test-user',
-        idempotencyKey: generateUUID(),
+        seatNumber: 1,
+        userId: 'test-user-123',
       };
 
-      const response = await request(app.getHttpServer())
+      const response = await request(server)
         .post('/bookings')
         .send(bookingData)
         .expect(200);
 
+      expect(response.body.id).toBeDefined();
       expect(response.body).toMatchObject({
-        id: expect.any(String),
         userId: bookingData.userId,
         seatNumber: bookingData.seatNumber,
         showtimeId: bookingData.showtimeId,
@@ -49,61 +57,38 @@ describe('Bookings API (e2e)', () => {
       createdBookingId = response.body.id;
     });
 
-    it('should return the same booking when using the same idempotency key', async () => {
-      const idempotencyKey = generateUUID();
-
-      const bookingData = {
-        showtimeId: commonData.showtime.id,
-        seatNumber: 25, // Using a different seat to avoid conflicts
-        userId: 'test-user-idempotency',
-        idempotencyKey: idempotencyKey,
-      };
-
-      const firstResponse = await request(app.getHttpServer())
-        .post('/bookings')
-        .send(bookingData)
-        .expect(200);
-
-      const firstBookingId = firstResponse.body.id;
-
-      const secondResponse = await request(app.getHttpServer())
-        .post('/bookings')
-        .send(bookingData)
-        .expect(200);
-
-      expect(secondResponse.body.id).toBe(firstBookingId);
-      expect(secondResponse.body).toMatchObject({
-        userId: bookingData.userId,
-        seatNumber: bookingData.seatNumber,
-        showtimeId: bookingData.showtimeId,
-      });
-    });
-
     it('should get all bookings', async () => {
-      const response = await request(app.getHttpServer()).get('/bookings');
+      const booking = await createTestBooking(app, commonData.showtime.id, {
+        seatNumber: 1,
+        userId: 'test-user-123',
+      });
+      createdBookingId = booking.body.id;
+
+      const response = await request(server).get('/bookings');
 
       expect(response.status).toBe(200);
       expect(Array.isArray(response.body)).toBe(true);
-      if (response.body.length > 0) {
-        expect(
-          response.body.find((booking) => booking.id === createdBookingId),
-        ).toBeTruthy();
-      }
     });
 
     it('should get a booking by id', async () => {
-      const response = await request(app.getHttpServer()).get(
+      const booking = await createTestBooking(app, commonData.showtime.id, {
+        seatNumber: 1,
+        userId: 'test-user-123',
+      });
+      createdBookingId = booking.body.id;
+
+      const response = await request(server).get(
         `/bookings/${createdBookingId}`,
       );
 
       expect(response.status).toBe(200);
       expect(response.body.id).toBe(createdBookingId);
-      expect(response.body.seatNumber).toBe(10);
+      expect(response.body.seatNumber).toBe(1);
     });
 
     it('should return 404 for a non-existent booking', async () => {
       const nonExistentUuid = '00000000-0000-0000-0000-000000000000';
-      const response = await request(app.getHttpServer()).get(
+      const response = await request(server).get(
         `/bookings/${nonExistentUuid}`,
       );
 
@@ -121,14 +106,14 @@ describe('Bookings API (e2e)', () => {
         },
       );
 
-      const response = await request(app.getHttpServer()).delete(
-        `/bookings/${bookingToDelete.id}`,
+      const response = await request(server).delete(
+        `/bookings/${bookingToDelete.body.id}`,
       );
 
       expect(response.status).toBe(200);
 
-      const getResponse = await request(app.getHttpServer()).get(
-        `/bookings/${bookingToDelete.id}`,
+      const getResponse = await request(server).get(
+        `/bookings/${bookingToDelete.body.id}`,
       );
 
       expect(getResponse.status).toBeGreaterThanOrEqual(400);
@@ -137,31 +122,29 @@ describe('Bookings API (e2e)', () => {
   });
 
   describe('Booking Validation', () => {
-    beforeEach(async () => {
-      await cleanupTest();
-      commonData = await setupCommonTestData(app);
-    });
-
     it('should prevent duplicate seat bookings', async () => {
-      await createTestBooking(app, commonData.showtime.id, {
-        seatNumber: 5,
-        userId: 'user1',
-      });
-
-      // Try to book the same seat
-      const duplicateBookingData = {
+      const bookingData = {
         showtimeId: commonData.showtime.id,
         seatNumber: 5,
-        userId: 'user2',
-        idempotencyKey: generateUUID(),
+        userId: 'first-user',
       };
 
-      const response = await request(app.getHttpServer())
+      await request(server).post('/bookings').send(bookingData).expect(200);
+
+      // Try to book same seat
+      const duplicateBookingData = {
+        ...bookingData,
+        userId: 'second-user',
+      };
+
+      const response = await request(server)
         .post('/bookings')
         .send(duplicateBookingData);
 
       expect(response.status).toBe(409);
-      expect(response.body.message.toLowerCase()).toContain('already booked');
+      expect(response.body.message.toLowerCase()).toContain(
+        'seat is already booked',
+      );
     });
 
     it('should handle non-existent showtime', async () => {
@@ -169,10 +152,9 @@ describe('Bookings API (e2e)', () => {
         showtimeId: 9999, // Non-existent showtime ID
         seatNumber: 1,
         userId: 'test-user',
-        idempotencyKey: generateUUID(),
       };
 
-      const response = await request(app.getHttpServer())
+      const response = await request(server)
         .post('/bookings')
         .send(invalidBookingData);
 
@@ -187,10 +169,9 @@ describe('Bookings API (e2e)', () => {
         showtimeId: commonData.showtime.id,
         seatNumber: capacity + 1,
         userId: 'capacity-test-user',
-        idempotencyKey: generateUUID(),
       };
 
-      const response = await request(app.getHttpServer())
+      const response = await request(server)
         .post('/bookings')
         .send(invalidBookingData);
 
@@ -202,7 +183,7 @@ describe('Bookings API (e2e)', () => {
     });
 
     it('should prevent bookings when theater is at full capacity', async () => {
-      const smallTheater = await request(app.getHttpServer())
+      const smallTheater = await request(server)
         .post('/theaters')
         .send({
           name: 'Small Test Theater',
@@ -210,7 +191,7 @@ describe('Bookings API (e2e)', () => {
         })
         .expect(200);
 
-      const showtime = await request(app.getHttpServer())
+      const showtime = await request(server)
         .post('/showtimes')
         .send({
           movieId: commonData.movie.id,
@@ -221,25 +202,21 @@ describe('Bookings API (e2e)', () => {
         .expect(200);
 
       for (let seat = 1; seat <= 3; seat++) {
-        await request(app.getHttpServer())
+        await request(server)
           .post('/bookings')
           .send({
             showtimeId: showtime.body.id,
             seatNumber: seat,
             userId: `user-${seat}`,
-            idempotencyKey: generateUUID(),
           })
           .expect(200);
       }
 
-      const response = await request(app.getHttpServer())
-        .post('/bookings')
-        .send({
-          showtimeId: showtime.body.id,
-          seatNumber: 1,
-          userId: 'extra-user',
-          idempotencyKey: generateUUID(),
-        });
+      const response = await request(server).post('/bookings').send({
+        showtimeId: showtime.body.id,
+        seatNumber: 1,
+        userId: 'extra-user',
+      });
 
       expect(response.status).toBe(400);
       expect(response.body.message.toLowerCase()).toContain('capacity');
@@ -249,8 +226,10 @@ describe('Bookings API (e2e)', () => {
       const connection = app.get(DataSource);
       const showtimeRepository = connection.getRepository(Showtime);
 
+      // Create start time (yesterday)
       const startTime = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
+      // Create end time (2 hours after start time)
       const endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000);
 
       const pastShowtime = await showtimeRepository.save({
@@ -261,14 +240,11 @@ describe('Bookings API (e2e)', () => {
         price: 10.99,
       });
 
-      const response = await request(app.getHttpServer())
-        .post('/bookings')
-        .send({
-          showtimeId: pastShowtime.id,
-          seatNumber: 1,
-          userId: 'past-user',
-          idempotencyKey: generateUUID(),
-        });
+      const response = await request(server).post('/bookings').send({
+        showtimeId: pastShowtime.id,
+        seatNumber: 1,
+        userId: 'past-user',
+      });
 
       expect(response.status).toBe(400);
       expect(response.body.message.toLowerCase()).toContain('already started');

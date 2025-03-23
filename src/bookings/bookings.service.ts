@@ -26,17 +26,6 @@ export class BookingsService {
 
   async create(createBookingDto: CreateBookingDto) {
     try {
-      if (createBookingDto.idempotencyKey) {
-        const existingBookingWithKey = await this.bookingsRepository.findOne({
-          where: { idempotencyKey: createBookingDto.idempotencyKey },
-          relations: ['showtime'],
-        });
-
-        if (existingBookingWithKey) {
-          return existingBookingWithKey;
-        }
-      }
-
       const showtime = await this.showtimesService.findOne(
         createBookingDto.showtimeId,
       );
@@ -74,10 +63,6 @@ export class BookingsService {
       booking.showtimeId = createBookingDto.showtimeId;
       booking.seatNumber = createBookingDto.seatNumber;
       booking.userId = createBookingDto.userId;
-
-      if (createBookingDto.idempotencyKey) {
-        booking.idempotencyKey = createBookingDto.idempotencyKey;
-      }
 
       return await this.bookingsRepository.save(booking);
     } catch (error) {

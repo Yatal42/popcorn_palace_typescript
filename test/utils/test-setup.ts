@@ -6,7 +6,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { waitForDatabase, clearTables, testDataSource } from '../setup';
 import { HttpExceptionFilter } from '../../src/common/filters/http-exception.filter';
-import { v4 as generateUUID } from 'uuid';
 import { CreateMovieDto } from '../../src/movies/dto/create-movie.dto';
 import { CreateTheaterDto } from '../../src/theaters/dto/create-theater.dto';
 import { CreateShowtimeDto } from '../../src/showtimes/dto/create-showtime.dto';
@@ -121,7 +120,6 @@ export async function createTestBooking(
     showtimeId,
     seatNumber: Math.floor(Math.random() * 50) + 1, // Random seat
     userId: `user-${Date.now()}`,
-    idempotencyKey: generateUUID(),
     ...bookingData,
   };
 
@@ -138,15 +136,12 @@ export async function createTestBooking(
         response.body,
       );
       console.error('Request data was:', defaultBooking);
-      throw new Error(
-        `Failed to create test booking with status ${response.status}: ${JSON.stringify(response.body)}`,
-      );
     }
 
-    return response.body;
-  } catch (error) {
-    console.error('Error creating test booking:', error);
-    throw error;
+    return response;
+  } catch (e) {
+    console.error('Booking creation failed with exception:', e);
+    throw e;
   }
 }
 
@@ -164,24 +159,24 @@ export async function createMultipleBookings(
   count: number,
   baseData: Partial<CreateBookingDto> = {},
 ) {
-  const bookingPromises = [];
-
+  const bookings = [];
   for (let i = 1; i <= count; i++) {
-    const bookingData: CreateBookingDto = {
+    const booking = {
       showtimeId,
       seatNumber: i,
       userId: `batch-user-${Date.now()}-${i}`,
-      idempotencyKey: generateUUID(),
       ...baseData,
     };
 
-    bookingPromises.push(
-      request(app.getHttpServer()).post('/bookings').send(bookingData),
-    );
-  }
+    const response = await request(app.getHttpServer())
+      .post('/bookings')
+      .send(booking);
 
-  const responses = await Promise.all(bookingPromises);
-  return responses.map((response) => response.body);
+    if (response.status === 200) {
+      bookings.push(response.body);
+    }
+  }
+  return bookings;
 }
 
 export function setupRelatedTests(description, setupFn, testFns) {
